@@ -6,8 +6,8 @@
 module.exports = function (success, error) {
   // 处理error回调默认值，保持原逻辑一致
   if (typeof error !== 'function') {
-    error = () => {
-      console.log('数据库连接失败');
+    error = (err) => {
+      console.error('数据库连接失败:', err);
     };
   }
 
