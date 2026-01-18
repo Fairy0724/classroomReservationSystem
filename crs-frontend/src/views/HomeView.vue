@@ -179,12 +179,12 @@ const totalPages = computed(() => {
 });
 
 // 根据当前页码获取要显示的商品
-// const currentPageProducts = computed(() => {
-//   const filtered = selectedCategory.value ? products.value.filter(product => Number(product.categoryId) === Number(selectedCategory.value)) : products.value;
-//   const startIndex = (currentPage.value - 1) * itemsPerPage;
-//   const endIndex = startIndex + itemsPerPage;
-//   return filtered.slice(startIndex, endIndex);
-// });
+const currentPageProducts = computed(() => {
+  const filtered = selectedCategory.value ? products.value.filter(product => Number(product.categoryId) === Number(selectedCategory.value)) : products.value;
+  const startIndex = (currentPage.value - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  return filtered.slice(startIndex, endIndex);
+});
 
 // 上一页
 const prevPage = () => {
@@ -207,41 +207,41 @@ const goToPage = (page) => {
   }
 };
 
-// // 获取可见的页码数组，限制在5页
-// const getVisiblePages = computed(() => {
-//   const visiblePages = [];
-//   const startPage = Math.max(currentPage.value - 2, 1);
-//   const endPage = Math.min(startPage + 4, totalPages.value);
+// 获取可见的页码数组，限制在5页
+const getVisiblePages = computed(() => {
+  const visiblePages = [];
+  const startPage = Math.max(currentPage.value - 2, 1);
+  const endPage = Math.min(startPage + 4, totalPages.value);
 
-//   for (let i = startPage; i <= endPage; i++) {
-//     visiblePages.push(i);
-//   }
+  for (let i = startPage; i <= endPage; i++) {
+    visiblePages.push(i);
+  }
 
-//   return visiblePages;
-// });
+  return visiblePages;
+});
 
-// // 获取购物车数量
-// const fetchCartCount = async () => {
-//   if (!userStore.isLogin) {
-//     cartCount.value = 0;
-//     return;
-//   }
+// 获取购物车数量
+const fetchCartCount = async () => {
+  if (!userStore.isLogin) {
+    cartCount.value = 0;
+    return;
+  }
 
-//   try {
-//     // 检查用户是否登录
-//     if (userStore.userInfo && userStore.userInfo.id) {
-//       const res = await request.get('/carts', {
-//         params: { userId: userStore.userInfo.id }
-//       });
-//       cartCount.value = Array.isArray(res) ? res.length : 0;
-//     } else {
-//       cartCount.value = 0;
-//     }
-//   } catch (error) {
-//     console.error('获取购物车数量失败:', error);
-//     cartCount.value = 0;
-//   }
-// };
+  try {
+    // 检查用户是否登录
+    if (userStore.userInfo && userStore.userInfo.id) {
+      const res = await request.get('/carts', {
+        params: { userId: userStore.userInfo.id }
+      });
+      cartCount.value = Array.isArray(res) ? res.length : 0;
+    } else {
+      cartCount.value = 0;
+    }
+  } catch (error) {
+    console.error('获取购物车数量失败:', error);
+    cartCount.value = 0;
+  }
+};
 
 // 退出登录
 const logout = async () => {
@@ -259,45 +259,45 @@ const handleSearch = () => {
   }
 };
 
-// // 获取轮播图数据
-// const fetchBanners = async () => {
-//   try {
-//     const res = await request.get('/banners');
-//     slides.value = res;
-//   } catch (error) {
-//     console.error('获取轮播图数据失败:', error);
-//   }
-// };
+// 获取轮播图数据
+const fetchBanners = async () => {
+  try {
+    const res = await request.get('/banners');
+    slides.value = res;
+  } catch (error) {
+    console.error('获取轮播图数据失败:', error);
+  }
+};
 
-// // 获取分类数据
-// const fetchCategories = async () => {
-//   try {
-//     const res = await request.get('/categories');
-//     categories.value = res;
-//   } catch (error) {
-//     console.error('获取分类数据失败:', error);
-//   }
-// };
+// 获取分类数据
+const fetchCategories = async () => {
+  try {
+    const res = await request.get('/categories');
+    categories.value = res;
+  } catch (error) {
+    console.error('获取分类数据失败:', error);
+  }
+};
 
-// // 获取商品数据
-// const fetchProducts = async () => {
-//   try {
-//     const res = await request.get('/products');
-//     products.value = res;
-//   } catch (error) {
-//     console.error('获取商品列表失败:', error);
-//   }
-// };
+// 获取商品数据
+const fetchProducts = async () => {
+  try {
+    const res = await request.get('/products');
+    products.value = res;
+  } catch (error) {
+    console.error('获取商品列表失败:', error);
+  }
+};
 
-// // 获取品牌数据
-// const fetchBrands = async () => {
-//   try {
-//     const res = await request.get('/brands');
-//     brands.value = res;
-//   } catch (error) {
-//     console.error('获取品牌数据失败:', error);
-//   }
-// };
+// 获取品牌数据
+const fetchBrands = async () => {
+  try {
+    const res = await request.get('/brands');
+    brands.value = res;
+  } catch (error) {
+    console.error('获取品牌数据失败:', error);
+  }
+};
 
 // 切换到下一张幻灯片
 const nextSlide = () => {

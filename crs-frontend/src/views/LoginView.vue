@@ -52,7 +52,9 @@
                 <div class="form-group">
                   <label for="account" class="form-label">学号/工号</label>
                   <div class="input-wrapper">
-                    <i class="fa fa-user input-icon"></i>
+                    <!-- 替换后 -->
+                    <el-icon class="input-icon"><User /></el-icon>
+                    
                     <input type="text" id="account" v-model="account" placeholder="请输入学号/工号" class="form-input">
                   </div>
                 </div>
@@ -60,7 +62,7 @@
                 <div class="form-group">
                   <label for="password" class="form-label">密码</label>
                   <div class="input-wrapper">
-                    <i class="fa fa-lock input-icon"></i>
+                    <el-icon class="input-icon"><Lock /></el-icon>
                     <input type="password" id="password" v-model="password" placeholder="请输入密码" class="form-input">
                   </div>
                 </div>
@@ -123,6 +125,7 @@
               <div class="social-media">
                 <a href="#" class="social-icon weixin">
                   <i class="fa fa-weixin"></i>
+                  <!-- <el-icon class="social-icon"><Wechat /></el-icon> -->
                 </a>
                 <a href="#" class="social-icon weibo">
                   <i class="fa fa-weibo"></i>
@@ -148,6 +151,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '../stores/userStore';
+import { User, Lock } from '@element-plus/icons-vue'
 
 // 引入用户状态管理和路由
 const userStore = useUserStore();
