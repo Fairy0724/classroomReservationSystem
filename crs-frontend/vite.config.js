@@ -21,7 +21,7 @@ export default defineConfig({
         // 代理目标地址后端服务器地址
         target: 'http://localhost:3000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        // 不重写路径，保持 /api 前缀与后端一致
       },
     },
   },

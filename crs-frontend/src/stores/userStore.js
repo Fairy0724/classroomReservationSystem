@@ -9,10 +9,11 @@ export const useUserStore = defineStore('user', {
   }),
   actions: {
     async login(username, password) {
-      const res = await request.post('/api/user/login', { username, password })
+      const res = await request.post('/user/login', { username, password })
       this.token = res.token
       this.userInfo = res.user
       this.role = res.user.role
+      this.realName = res.user.realName
       localStorage.setItem('token', res.token)
       return res
     },

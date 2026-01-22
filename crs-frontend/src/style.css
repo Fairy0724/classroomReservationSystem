@@ -153,3 +153,194 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ==================== 全局变量（导航样式使用） ==================== */
+:root {
+  --primary-color: #2ecc71;
+  --primary-dark: #27ae60;
+  --secondary-color: #f39c12;
+  --text-color: #333;
+  --text-light: #666;
+  --bg-light: #f8f9fa;
+  --bg-dark: #e9ecef;
+  --border-radius: 8px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* ==================== 导航栏样式 ==================== */
+.nav-container {
+  background-color: white;
+  box-shadow: var(--box-shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+}
+
+.nav-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 3rem;
+  /* 增加内边距 */
+  max-width: 1600px;
+  /* 增加最大宽度 */
+  margin: 0 auto;
+  height: 120px;
+  /* 增加高度 */
+}
+
+/* Logo 样式 */
+.logo {
+  font-size: 2rem;
+  /* 增加字体大小 */
+  font-weight: bold;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  min-width: 200px;
+  /* 确保 logo 区域有足够空间 */
+}
+
+.logo img {
+  height: 100px;
+  /* 增加 logo 图片高度 */
+  width: auto;
+  object-fit: contain;
+  margin-right: 1rem;
+  /* 添加右侧间距 */
+}
+
+/* 搜索栏样式 */
+.search-bar {
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  border-radius: 999px;
+  overflow: hidden;
+  padding: 0.5rem 1rem;
+  width: 400px;
+  transition: all 0.3s ease;
+}
+
+.search-bar:focus-within {
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+  border-color: var(--primary-color);
+}
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 0.5rem;
+  font-size: 1rem;
+  background: transparent;
+}
+
+.search-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.search-btn:hover {
+  color: var(--primary-color);
+}
+
+/* 导航链接样式 */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.nav-link {
+  color: var(--text-color);
+  transition: color 0.3s ease;
+  position: relative;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  color: var(--primary-color);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary-color);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* 购物车链接特殊样式 */
+.cart-link {
+  position: relative;
+}
+
+.cart-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: var(--secondary-color);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+/* ==================== 响应式设计 ==================== */
+@media (max-width: 1024px) {
+  .nav-wrapper {
+    padding: 1rem;
+  }
+
+  .search-bar {
+    width: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-wrapper {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 1rem;
+  }
+
+  .search-bar {
+    order: 3;
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .nav-links {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .nav-links {
+    width: 100%;
+    justify-content: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+}
