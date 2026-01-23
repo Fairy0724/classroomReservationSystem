@@ -57,6 +57,23 @@ const classrooms = [
   }
 ]
 
+// 统一处理数组字段（支持数组或 JSON 字符串）
+const normalizeArray = (value, fallback = []) => {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed)
+        return Array.isArray(parsed) ? parsed : fallback
+      } catch (err) {
+        return fallback
+      }
+    }
+  }
+  return fallback
+}
+
 /**
  * 获取教室列表或单个教室
  * 支持：
@@ -88,6 +105,89 @@ const getClassrooms = (req, res) => {
   res.json(result)
 }
 
+/**
+ * 新增教室（管理员）
+ */
+const createClassroom = (req, res) => {
+  const {
+    name,
+    brief,
+    mainImage,
+    images,
+    capacity,
+    location,
+    status,
+    detail,
+    params
+  } = req.body || {}
+
+  if (!name || !location || !capacity) {
+    return res.status(400).json({ msg: '教室名称、位置、容量为必填项' })
+  }
+
+  const nextId = classrooms.length
+    ? Math.max(...classrooms.map(item => Number(item.id))) + 1
+    : 1
+
+  const record = {
+    id: nextId,
+    name,
+    brief: brief || '',
+    mainImage: mainImage || '',
+    images: normalizeArray(images, []),
+    capacity: Number(capacity),
+    location,
+    status: status || 'available',
+    detail: detail || '',
+    params: normalizeArray(params, []),
+    reviews: []
+  }
+
+  classrooms.push(record)
+  res.json({ msg: '新增成功', data: record })
+}
+
+/**
+ * 更新教室（管理员）
+ */
+const updateClassroom = (req, res) => {
+  const { id } = req.params
+  const index = classrooms.findIndex(item => String(item.id) === String(id))
+  if (index === -1) {
+    return res.status(404).json({ msg: '教室不存在' })
+  }
+
+  const payload = req.body || {}
+  const current = classrooms[index]
+
+  const updated = {
+    ...current,
+    ...payload,
+    capacity: payload.capacity !== undefined ? Number(payload.capacity) : current.capacity,
+    images: payload.images !== undefined ? normalizeArray(payload.images, current.images) : current.images,
+    params: payload.params !== undefined ? normalizeArray(payload.params, current.params) : current.params
+  }
+
+  classrooms[index] = updated
+  res.json({ msg: '更新成功', data: updated })
+}
+
+/**
+ * 删除教室（管理员）
+ */
+const deleteClassroom = (req, res) => {
+  const { id } = req.params
+  const index = classrooms.findIndex(item => String(item.id) === String(id))
+  if (index === -1) {
+    return res.status(404).json({ msg: '教室不存在' })
+  }
+  const [removed] = classrooms.splice(index, 1)
+  res.json({ msg: '删除成功', data: removed })
+}
+
 module.exports = {
-  getClassrooms
+  getClassrooms,
+  createClassroom,
+  updateClassroom,
+  deleteClassroom
 }

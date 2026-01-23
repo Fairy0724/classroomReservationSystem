@@ -10,11 +10,14 @@ const LoginView = () => import('@/views/LoginView.vue')
 const MainView = () => import('@/views/MainView.vue')
 const Layout = () => import('@/components/Layout.vue')
 const HomeView = () => import('@/views/HomeView.vue')
-const AdminView = () => import('@/views/AdminView.vue')
+const AdminView = () => import('@/views/admin/AdminView.vue')
+const AdminClassroomList = () => import('@/views/admin/ClassroomList.vue')
 const ClassroomView = () => import('@/views/ClassroomView.vue')
 const ClassroomDetailView = () => import('@/views/ClassroomDetailView.vue')
 const ReservationView = () => import('@/views/ReservationView.vue')
 const PlaceholderView = () => import('@/views/PlaceholderView.vue')
+const ProfileView = () => import('@/views/user/ProfileView.vue')
+// const AdminProfileView = () => import('@/views/admin/AdminProfileView.vue')
 // const UserListView = () => import('@/views/UserListView.vue')
 // const ClassroomListView = () => import('@/views/ClassroomListView.vue')
 
@@ -32,84 +35,91 @@ const routes = [
       },
       {
         // 管理员路由，默认跳转到admin
-        path: '/admin',
+        path: 'admin',
         name: 'admin',
         component: AdminView,
         meta: { keepAlive: true, isAdmin: true } // 管理员页需要缓存
       },
       {
+        // 管理员：教室管理
+        path: 'admin/classroom',
+        name: 'adminClassroom',
+        component: AdminClassroomList,
+        meta: { keepAlive: false, isAdmin: true }
+      },
+      {
         // 教室列表页
-        path: '/classrooms',
+        path: 'classrooms',
         name: 'classroomList',
         component: ClassroomView,
         meta: { keepAlive: true }
       },
       {
         // 教室详情页
-        path: '/classroom/:id',
+        path: 'classroom/:id',
         name: 'classroomDetail',
         component: ClassroomDetailView,
         meta: { keepAlive: false }
       },
       {
         // 教室预约页（从详情页进入）
-        path: '/classroom/:id/reserve',
+        path: 'classroom/:id/reserve',
         name: 'classroomReserve',
         component: ReservationView,
         meta: { requiresAuth: true, title: '提交预约申请' }
       },
       {
         // 我的预约（需要登录）
-        path: '/my-reservations',
+        path: 'my-reservations',
         name: 'myReservations',
         component: PlaceholderView,
         meta: { requiresAuth: true, title: '我的预约' }
       },
       {
         // 教师审批（需要登录）
-        path: '/approval',
+        path: 'approval',
         name: 'approval',
         component: PlaceholderView,
         meta: { requiresAuth: true, title: '审批管理' }
       },
       {
         // 教师课程（需要登录）
-        path: '/my-courses',
+        path: 'my-courses',
         name: 'myCourses',
         component: PlaceholderView,
         meta: { requiresAuth: true, title: '我的课程' }
       },
       {
         // 课程表（需要登录）
-        path: '/schedule',
+        path: 'schedule',
         name: 'schedule',
         component: PlaceholderView,
         meta: { requiresAuth: true, title: '课程表' }
       },
       {
         // 系统公告
-        path: '/notice',
+        path: 'notice',
         name: 'notice',
         component: PlaceholderView,
         meta: { keepAlive: true, title: '系统公告' }
       },
       {
         // 个人中心
-        path: '/profile',
+        path: 'profile',
         name: 'profile',
-        component: PlaceholderView,
+        component: ProfileView,
         meta: { requiresAuth: true, title: '个人中心' }
       },
       {
         // 账号设置
-        path: '/settings',
+        path: 'settings',
         name: 'settings',
         component: PlaceholderView,
         meta: { requiresAuth: true, title: '账号设置' }
       }
-      
+
     ]
-    
+
   },
   {
     path: '/login',

@@ -1404,7 +1404,7 @@ onMounted(async () => {
   text-overflow: ellipsis;
 }
 
-.notice-content p {
+/*.notice-content p {
   font-size: 13px;
   color: var(--text-secondary);
   margin: 0;
@@ -1412,6 +1412,28 @@ onMounted(async () => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}*/
+.notice-content p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+
+  /* 更完整的兼容性写法 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* 多行文本截断 */
+  display: -webkit-box;
+  display: -moz-box;
+  display: box;
+
+  -webkit-line-clamp: 2;
+  -moz-line-clamp: 2;
+  line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+  -moz-box-orient: vertical;
+  box-orient: vertical;
 }
 
 .notice-time {

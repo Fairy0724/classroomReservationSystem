@@ -1,173 +1,168 @@
 <!-- ProfileView.vue -->
 <template>
   <div>
-    <!-- 顶部导航 -->
+    <!-- 顶部导航：保留整体样式，替换为教室预约系统入口 -->
     <nav class="nav-container">
       <div class="nav-wrapper">
         <div class="logo">
-          <img src="../assets/images/logo.png" alt="荔枝烧蓝莓 Logo">
+          <img :src="logoUrl" alt="教室预约系统 Logo">
         </div>
         <div class="search-bar">
-          <input type="text" v-model="searchQuery" placeholder="搜索商品..." @keyup.enter="handleSearch">
+          <input type="text" v-model="searchQuery" placeholder="搜索教室..." @keyup.enter="handleSearch">
           <button class="search-btn" @click="handleSearch">
             <i class="fa fa-search"></i>
           </button>
         </div>
         <div class="nav-links">
           <RouterLink to="/" class="nav-link">首页</RouterLink>
-          <template v-if="userStore.isLogin">
+          <RouterLink to="/classrooms" class="nav-link">教室列表</RouterLink>
+          <template v-if="isLogin">
+            <RouterLink to="/my-reservations" class="nav-link">我的预约</RouterLink>
             <RouterLink to="/profile" class="nav-link">个人中心</RouterLink>
-            <RouterLink :to="{ name: 'cart' }" class="nav-link cart-link">购物车</RouterLink>
-            <RouterLink :to="{ name: 'orders' }" class="nav-link">订单</RouterLink>
             <a href="#" class="nav-link" @click.prevent="logout">退出登录</a>
           </template>
           <template v-else>
             <RouterLink to="/login" class="nav-link">登录</RouterLink>
-            <RouterLink to="/register" class="nav-link">注册</RouterLink>
           </template>
         </div>
       </div>
     </nav>
 
     <div class="profile-page container">
-      <!-- 左侧菜单 -->
+      <!-- 左侧菜单：用户信息与功能菜单 -->
       <div class="profile-sidebar">
         <div class="user-card">
           <div class="avatar-wrapper">
-            <img :src="userStore.userInfo?.avatar || 'https://via.placeholder.com/120'"
-              :alt="userStore.userInfo?.username">
+            <img :src="userStore.userInfo?.avatar || logoUrl" :alt="userStore.userInfo?.username"
+              referrerpolicy="no-referrer" @error="handleAvatarError">
             <label class="upload-avatar" title="更换头像">
               <input type="file" accept="image/*" style="display:none" @change="handleAvatarChange" />
               <i class="el-icon-camera"></i>
             </label>
           </div>
-          <h3>{{ userStore.userInfo?.username }}</h3>
+          <h3>{{ userStore.userInfo?.realName }}</h3>
           <p class="user-level">
-            <i class="el-icon-trophy"></i>
-            普通会员
+            <!-- 身份展示：学生 / 教师 / 管理员 -->
+            <i class="el-icon-user"></i>
+            {{ roleLabel }}
           </p>
         </div>
-
+        <!-- 功能菜单：基本信息、安全设置、个人设置 -->
         <div class="menu-list">
           <div v-for="menu in menuItems" :key="menu.key" :class="['menu-item', { active: currentMenu === menu.key }]"
             @click="currentMenu = menu.key">
             <i :class="menu.icon"></i>
             {{ menu.label }}
-            <span v-if="menu.count" class="badge">{{ menu.count }}</span>
           </div>
         </div>
       </div>
 
       <!-- 右侧内容区 -->
       <div class="profile-content">
-        <!-- 基本信息 -->
+        <!-- 基本信息：适配教室预约系统字段 -->
         <div v-if="currentMenu === 'basic'" class="content-card">
           <div class="card-header">
             <h2>基本信息</h2>
-            <el-button type="primary" @click="editMode = !editMode">
+            <!-- <el-button type="primary" @click="editMode = !editMode">
               {{ editMode ? '保存' : '编辑' }}
-            </el-button>
+            </el-button> -->
+            <!-- 仅展示，不支持编辑 -->
           </div>
           <div class="info-list">
             <div class="info-item">
-              <span class="info-label">用户名</span>
-              <template v-if="editMode">
-                <el-input v-model="userForm.username" placeholder="请输入用户名" />
-              </template>
-              <span v-else class="info-value">{{ userStore.userInfo?.username }}</span>
+              <span class="info-label">姓名</span>
+              <span class="info-value">{{ userStore.userInfo?.realName }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">手机号</span>
-              <template v-if="editMode">
-                <el-input v-model="userForm.phone" placeholder="请输入手机号" />
+              <!-- 判断身份，学生展示学号，教师展示工号 -->
+              <template v-if="roleLabel === '学生'">
+                <span class="info-label">学号</span>
+                <span class="info-value">{{ userStore.userInfo?.username }}</span>
               </template>
-              <span v-else class="info-value">{{ userStore.userInfo?.phone || '未绑定' }}</span>
+              <template v-else>
+                <span class="info-label">工号</span>
+                <span class="info-value">{{ userStore.userInfo?.username }}</span>
+              </template>
+            </div>
+
+            <div class="info-item">
+              <span class="info-label">手机号</span>
+              <span class="info-value">{{ userStore.userInfo?.phone || '未绑定' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">邮箱</span>
-              <template v-if="editMode">
-                <el-input v-model="userForm.email" placeholder="请输入邮箱" />
-              </template>
-              <span v-else class="info-value">{{ userStore.userInfo?.email || '未绑定' }}</span>
+              <span class="info-value">{{ userStore.userInfo?.email || '未绑定' }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">会员等级</span>
-              <span class="info-value">普通会员</span>
+              <span class="info-label">身份</span>
+              <span class="info-value">{{ roleLabel }}</span>
             </div>
             <div class="info-item">
+              <span class="info-label">学院</span>
+              <span class="info-value">{{ userStore.userInfo?.department }}</span>
+            </div>
+            <!-- <div class="info-item">
               <span class="info-label">注册时间</span>
               <span class="info-value">{{ formatDate(userStore.userInfo?.createTime) }}</span>
-            </div>
+            </div> -->
           </div>
         </div>
-        <!-- 收货地址 -->
-        <div v-if="currentMenu === 'address'" class="content-card">
+
+        <!-- 我的预约：替换商城“地址/收藏” -->
+        <div v-if="currentMenu === 'reservations'" class="content-card">
           <div class="card-header">
-            <h2>收货地址</h2>
+            <h2>我的预约</h2>
+            <div class="card-actions">
+              <el-button type="primary" @click="goToClassrooms">去预约</el-button>
+              <el-button @click="goToMyReservations">查看全部</el-button>
+            </div>
           </div>
 
-          <div class="address-list">
-            <div v-if="addresses.length === 0" class="empty-tip">
-              暂无收货地址
+          <!-- 预约统计：帮助用户快速了解当前状态 -->
+          <div class="reservation-stats">
+            <div class="stat-item">
+              <span class="stat-number">{{ reservationStats.total }}</span>
+              <span class="stat-label">总预约</span>
             </div>
-            <div v-else v-for="addr in addresses" :key="addr.id" class="address-item">
-              <div class="address-info">
-                <div class="contact">
-                  <span class="name">{{ addr.name }}</span>
-                  <span class="phone">{{ addr.phone }}</span>
-                  <span v-if="addr.isDefault" class="default-tag">默认</span>
-                </div>
-                <div class="address">
-                  {{ addr.province }}{{ addr.city }}{{ addr.district }}{{ addr.detail }}
-                </div>
-              </div>
-              <div class="address-actions">
-                <el-button link @click="editAddress(addr)">编辑</el-button>
-                <el-button link @click="deleteAddress(addr.id)">删除</el-button>
-                <el-button v-if="!addr.isDefault" link @click="setDefaultAddress(addr.id)">
-                  设为默认
-                </el-button>
-              </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ reservationStats.pending }}</span>
+              <span class="stat-label">待审批</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ reservationStats.approved }}</span>
+              <span class="stat-label">已通过</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-number">{{ reservationStats.rejected }}</span>
+              <span class="stat-label">已驳回</span>
             </div>
           </div>
-        </div>
 
-        <!-- 我的收藏 -->
-        <div v-if="currentMenu === 'favorites'" class="content-card">
-          <h2>我的收藏</h2>
-          <div v-if="favorites.length === 0" class="empty-state">
-            <img src="../assets/images/none.png" alt="暂无收藏">
-            <p>您还没有收藏任何商品</p>
-            <RouterLink to="/" class="btn-primary">去逛逛</RouterLink>
+          <div v-if="reservationList.length === 0" class="empty-state">
+            <p>暂无预约记录</p>
+            <RouterLink to="/classrooms" class="btn-primary">去预约教室</RouterLink>
           </div>
-          <div v-else class="product-grid">
-            <div v-for="item in favorites" :key="item.id" class="product-card" @click="goToProduct(item.productId)">
-              <div class="product-image">
-                <img :src="item.product.mainImage" :alt="item.product.name">
-                <div v-if="item.product.discount" class="discount-badge">{{ item.product.discount }}折</div>
-                <button class="quick-view-btn" @click.stop="goToProduct(item.productId)">
-                  <i class="fa fa-eye"></i> 查看详情
-                </button>
+          <div v-else class="reservation-grid">
+            <div v-for="item in reservationList" :key="item.id" class="reservation-card">
+              <div class="reservation-header">
+                <div>
+                  <h3>{{ item.classroomName }}</h3>
+                  <p class="reservation-meta">{{ item.date }} · {{ item.time }}</p>
+                </div>
+                <span :class="['status-tag', statusClass(item.status)]">{{ item.status }}</span>
               </div>
-              <div class="product-info">
-                <div class="brand">{{ item.product.brandName || '美妆商城' }}</div>
-                <h3>{{ item.product.name }}</h3>
-                <div class="price">
-                  <span class="current-price">¥{{ item.product.price }}</span>
-                  <span v-if="item.product.originalPrice" class="original-price">¥{{ item.product.originalPrice
-                    }}</span>
-                </div>
-                <div class="actions">
-                  <button class="btn-heart" @click.stop="removeFavorite(item.id)">
-                    <i class="fa fa-heart"></i> 取消收藏
-                  </button>
-                  <button class="btn-cart" @click.stop="goToProduct(item.productId)">
-                    查看详情
-                  </button>
-                </div>
+              <div class="reservation-body">
+                <p><span class="label">用途：</span>{{ item.purpose }}</p>
+                <p><span class="label">地点：</span>{{ item.location }}</p>
+              </div>
+              <div class="reservation-actions">
+                <el-button link @click="goToClassroomDetail(item.classroomId)">查看教室</el-button>
               </div>
             </div>
           </div>
+
+          <!-- 数据来源说明 -->
+          <p class="helper-text">数据来自后端“我的预约”接口。</p>
         </div>
 
         <!-- 账号安全 -->
@@ -184,39 +179,19 @@
             <div class="security-item">
               <div class="security-info">
                 <h3>手机号验证</h3>
-                <p>已绑定：{{ userStore.userInfo?.phone }}</p>
+                <!-- 默认都绑定了 -->
+
+                <template>
+                  <p>已绑定：{{ userStore.userInfo?.phone }}</p>
+                </template>
               </div>
               <el-button @click="showPhoneDialog = true">修改</el-button>
+
             </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- 地址编辑弹窗 -->
-    <el-dialog :title="addressForm.id ? '编辑地址' : '新增地址'" v-model="showAddress" width="500px">
-      <el-form :model="addressForm" label-width="80px">
-        <el-form-item label="收货人">
-          <el-input v-model="addressForm.name"></el-input>
-        </el-form-item>
-        <el-form-item label="手机号码">
-          <el-input v-model="addressForm.phone"></el-input>
-        </el-form-item>
-        <el-form-item label="所在地区">
-          <el-cascader v-model="addressForm.region" :options="regionData" placeholder="请选择省/市/区"></el-cascader>
-        </el-form-item>
-        <el-form-item label="详细地址">
-          <el-input type="textarea" v-model="addressForm.detail" placeholder="请输入详细地址信息"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-checkbox v-model="addressForm.isDefault">设为默认地址</el-checkbox>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showAddress = false">取消</el-button>
-        <el-button type="primary" @click="saveAddress">确定</el-button>
-      </template>
-    </el-dialog>
 
     <!-- 修改密码弹窗 -->
     <el-dialog title="修改密码" v-model="showPwdDialog" width="400px">
@@ -249,245 +224,192 @@
         <el-button type="primary" @click="handleChangePhone">确定</el-button>
       </template>
     </el-dialog>
+
+
   </div>
+
 </template>
 
 <script setup>
-import { ref, onMounted, watch, onActivated, onDeactivated } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useUserStore } from '../stores/userStore';
-import request from '../utils/http';
+import { useUserStore } from '@/stores/userStore';
+import request from '@/utils/request';
 import { ElMessage } from 'element-plus';
-import '../assets/styles/nav.css';
+import logoUrl from '@/assets/images/logo.png';
 
+// 路由与用户状态
 const router = useRouter();
 const userStore = useUserStore();
+const isLogin = computed(() => !!userStore.token);
+
+// 当前菜单与编辑状态
 const currentMenu = ref('basic');
-const addresses = ref([]);
-const showAddress = ref(false);
 const editMode = ref(false);
 
-// 数据是否已加载的标志
-const dataLoaded = ref(false);
-
-// 用户编辑表单
+// 用户编辑表单（仅用于前端展示/编辑）
 const userForm = ref({
   username: '',
+  realName: '',
   phone: '',
-  email: ''
+  email: '',
+  department: ''
 });
 
-// 地址编辑表单
-const addressForm = ref({
-  id: '',
-  name: '',
-  phone: '',
-  region: [],
-  detail: '',
-  isDefault: false
-});
-
-// 省市区数据（示例数据）
-const regionData = [
-  {
-    label: '广东省',
-    value: '广东省',
-    children: [
-      {
-        label: '深圳市',
-        value: '深圳市',
-        children: [
-          { label: '南山区', value: '南山区' },
-          { label: '福田区', value: '福田区' }
-        ]
-      }
-    ]
-  }
-];
+// 顶部搜索（按教室关键字筛选）
+const searchQuery = ref('');
 
 const menuItems = [
   { key: 'basic', label: '基本信息', icon: 'el-icon-user' },
-  { key: 'address', label: '收货地址', icon: 'el-icon-location' },
-  { key: 'favorites', label: '我的收藏', icon: 'el-icon-star' },
+  { key: 'reservations', label: '我的预约', icon: 'el-icon-date' },
   { key: 'security', label: '账号安全', icon: 'el-icon-lock' }
 ];
 
-const searchQuery = ref('');
+// 角色显示文本（与教室预约系统一致）
+const roleLabel = computed(() => {
+  const role = userStore.userInfo?.role;
+  if (role === 'admin') return '管理员';
+  if (role === 'teacher') return '教师';
+  if (role === 'student') return '学生';
+  return '未设置';
+});
 
-// 收藏列表
-const favorites = ref([]);
+// 学号/工号展示
+const userIdLabel = computed(() => {
+  const role = userStore.userInfo?.role;
+  if (role === 'teacher') return '工号';
+  if (role === 'student') return '学号';
+  return '账号编号';
+});
 
-// 搜索处理
+const userIdValue = computed(() => {
+  return (
+    userStore.userInfo?.jobNo ||
+    userStore.userInfo?.studentNo ||
+    userStore.userInfo?.id ||
+    '未填写'
+  );
+});
+
+// 我的预约列表（来自后端）
+const reservationList = ref([]);
+
+const reservationStats = computed(() => {
+  const total = reservationList.value.length;
+  const pending = reservationList.value.filter(item => item.status === '待审批').length;
+  const approved = reservationList.value.filter(item => item.status === '已通过').length;
+  const rejected = reservationList.value.filter(item => item.status === '已驳回').length;
+  return { total, pending, approved, rejected };
+});
+
+// 搜索处理：跳转教室列表并传关键字
 const handleSearch = () => {
-  if (searchQuery.value.trim()) {
+  const keyword = searchQuery.value.trim();
+  if (keyword) {
     router.push({
-      name: 'select',
-      query: { q: searchQuery.value }
+      name: 'classroomList',
+      query: { keyword }
     });
   }
 };
 
-// 格式化日期-使用于收藏列表
+// 格式化日期
 const formatDate = (date) => {
   if (!date) return '未知';
   const d = new Date(date);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-// 获取收货地址列表
-const fetchAddresses = async () => {
-  try {
-    if (userStore.userInfo?.id) {
-      const res = await request.get(`/addresses?userId=${userStore.userInfo.id}`);
-      addresses.value = Array.isArray(res) ? res : [];
-    }
-  } catch (error) {
-    console.error('获取地址列表失败:', error);
-    ElMessage.error('获取地址列表失败');
-    addresses.value = [];
-  }
+// 预约状态映射
+const formatStatus = (status) => {
+  if (status === 'pending') return '待审批';
+  if (status === 'approved') return '已通过';
+  if (status === 'rejected') return '已驳回';
+  return status || '未知';
 };
 
-// 编辑地址
-const editAddress = (addr) => {
-  addressForm.value = { ...addr };
-  showAddress.value = true;
-};
-
-// 删除地址
-const deleteAddress = async (id) => {
+// 获取我的预约列表（后端）
+const fetchReservations = async () => {
   try {
-    await request.delete(`/addresses/${id}`);
-    await fetchAddresses();
-    ElMessage.success('删除成功');
-  } catch (error) {
-    console.error('删除地址失败:', error);
-    ElMessage.error('删除失败');
-  }
-};
+    const res = await request.get('/reservations/my');
+    const list = Array.isArray(res?.data) ? res.data : [];
 
-// 设置默认地址
-const setDefaultAddress = async (id) => {
-  try {
-    // 先将所有地址设为非默认
-    await Promise.all(
-      addresses.value.map(addr =>
-        request.put(`/addresses/${addr.id}`, {
-          ...addr,
-          isDefault: addr.id === id
-        })
-      )
-    );
-    // 然后将指定地址设为默认
-    await fetchAddresses();
-    ElMessage.success('设置成功');
-  } catch (error) {
-    console.error('设置默认地址失败:', error);
-    ElMessage.error('设置失败');
-  }
-};
+    const mapped = await Promise.all(
+      list.map(async (item) => {
+        let classroom = null;
+        try {
+          const classroomRes = await request.get('/classrooms', {
+            params: { id: item.classroomId }
+          });
+          classroom = Array.isArray(classroomRes) ? classroomRes[0] : classroomRes;
+        } catch (error) {
+          classroom = null;
+        }
 
-// 保存地址
-const saveAddress = async () => {
-  try {
-    // 验证表单
-    const addressData = {
-      ...addressForm.value,
-      userId: userStore.userInfo.id
-    };
-
-    // 如果有省市区数据，则合并成一个字符串
-    if (addressForm.value.id) {
-      await request.put(`/addresses/${addressForm.value.id}`, addressData);
-    } else {
-      await request.post('/addresses', addressData);
-    }
-
-    showAddress.value = false;
-    await fetchAddresses();
-    ElMessage.success('保存成功');
-  } catch (error) {
-    console.error('保存地址失败:', error);
-    ElMessage.error('保存失败');
-  }
-};
-
-// 获取收藏列表
-const fetchFavorites = async () => {
-  try {
-    if (!userStore.userInfo?.id)
-      return;
-    const res = await request.get('/favorites', {
-      params: { userId: userStore.userInfo.id }
-    });
-    // 对每个收藏项获取商品详情
-    const favoritesWithDetails = await Promise.all(
-      res.map(async (fav) => {
-        const products = await request.get('/products', {
-          params: { id: fav.productId }
-        });
         return {
-          ...fav,
-          product: Array.isArray(products) && products.length > 0 ? products[0] : null
+          id: item.id,
+          classroomId: item.classroomId,
+          classroomName: classroom?.name || `教室 ${item.classroomId}`,
+          location: classroom?.location || '未知',
+          date: item.date,
+          time: Array.isArray(item.timeSlots) ? item.timeSlots.join('、') : item.timeSlots,
+          status: formatStatus(item.status),
+          purpose: item.purpose || item.activityName || '—'
         };
       })
     );
-    // 过滤掉没有商品详情的收藏项
-    favorites.value = favoritesWithDetails.filter(fav => fav.product);
+
+    reservationList.value = mapped;
   } catch (error) {
-    console.error('获取收藏列表失败:', error);
-    ElMessage.error('获取收藏列表失败');
+    ElMessage.error('获取预约记录失败');
+    reservationList.value = [];
   }
 };
 
-// 取消收藏
-const removeFavorite = async (id) => {
-  try {
-    await request.delete(`/favorites/${id}`);
-    await fetchFavorites();
-    ElMessage.success('取消收藏成功');
-  } catch (error) {
-    console.error('取消收藏失败:', error);
-    ElMessage.error('取消收藏失败');
-  }
+// 页面跳转快捷入口
+const goToClassrooms = () => router.push({ name: 'classroomList' });
+const goToMyReservations = () => router.push({ name: 'myReservations' });
+const goToClassroomDetail = (id) => router.push({ name: 'classroomDetail', params: { id } });
+
+// 预约状态样式
+const statusClass = (status) => {
+  if (status === '待审批') return 'status-pending';
+  if (status === '已通过') return 'status-approved';
+  if (status === '已驳回') return 'status-rejected';
+  return 'status-default';
 };
 
-// 跳转到商品详情
-const goToProduct = (productId) => {
-  router.push(`/products/${productId}`);
-};
-
-// 编辑模式切换
+// 编辑模式切换：进入时填表，退出时保存
 watch(editMode, (newValue) => {
   if (newValue) {
-    // 进入编辑模式时，初始化表单数据
     userForm.value = {
       username: userStore.userInfo?.username || '',
+      realName: userStore.userInfo?.realName || '',
       phone: userStore.userInfo?.phone || '',
-      email: userStore.userInfo?.email || ''
+      email: userStore.userInfo?.email || '',
+      department: userStore.userInfo?.department || ''
     };
   } else {
-    // 退出编辑模式时，保存数据
     saveUserInfo();
   }
 });
 
-// 保存用户信息
+// 保存用户信息（接入后端）
 const saveUserInfo = async () => {
   try {
-    if (!userStore.userInfo?.id) return;
-
-    await userStore.updateProfile({
-      ...userStore.userInfo,
-      ...userForm.value
-    });
-
-    editMode.value = false;
+    if (!userStore.userInfo) return;
+    const payload = {
+      username: userForm.value.username,
+      realName: userForm.value.realName,
+      phone: userForm.value.phone,
+      email: userForm.value.email,
+      department: userForm.value.department
+    };
+    await userStore.updateProfile(payload);
     ElMessage.success('保存成功');
   } catch (error) {
-    console.error('保存用户信息失败:', error);
     ElMessage.error('保存失败');
-    editMode.value = true; // 保持编辑模式
+    editMode.value = true;
   }
 };
 
@@ -518,25 +440,13 @@ const pwdRules = {
   ]
 };
 
-// 修改密码逻辑
+// 修改密码逻辑（接入后端）
 const handleChangePwd = async () => {
   await pwdFormRef.value.validate();
-  if (pwdForm.value.oldPwd !== userStore.userInfo.password) {
-    ElMessage.error('原密码输入错误');
-    return;
-  }
-  if (pwdForm.value.newPwd === pwdForm.value.oldPwd) {
-    ElMessage.error('新密码不能与原密码相同');
-    return;
-  }
-  try {
-    await userStore.updateProfile({ ...userStore.userInfo, password: pwdForm.value.newPwd });
-    ElMessage.success('密码修改成功');
-    showPwdDialog.value = false;
-    pwdForm.value = { oldPwd: '', newPwd: '', confirmPwd: '' };
-  } catch (err) {
-    ElMessage.error('密码修改失败', err.message);
-  }
+  await userStore.changePassword(pwdForm.value.oldPwd, pwdForm.value.newPwd);
+  ElMessage.success('密码修改成功');
+  showPwdDialog.value = false;
+  pwdForm.value = { oldPwd: '', newPwd: '', confirmPwd: '' };
 };
 
 // 修改手机号弹窗与表单
@@ -553,79 +463,61 @@ const phoneRules = {
 // 修改手机号逻辑
 const handleChangePhone = async () => {
   await phoneFormRef.value.validate();
-  let phone = phoneForm.value.newPhone;
-  if (Array.isArray(phone)) {
-    phone = phone[0];
-  }
-  try {
-    await userStore.updateProfile({ ...userStore.userInfo, phone });
-    ElMessage.success('手机号修改成功');
-    showPhoneDialog.value = false;
-    phoneForm.value = { newPhone: '' };
-  } catch (err) {
-    ElMessage.error('手机号修改失败', err.message);
-  }
+  await userStore.updatePhone(phoneForm.value.newPhone);
+  ElMessage.success('手机号修改成功');
+  showPhoneDialog.value = false;
+  phoneForm.value = { newPhone: '' };
 };
 
+
+
 // 退出登录
-const logout = async () => {
-  await userStore.logout();
+const logout = () => {
+  userStore.logout();
   router.push('/login');
 };
 
-// 头像上传处理
+// 头像加载失败兜底（防止外链防盗链/404）
+const handleAvatarError = (event) => {
+  event.target.src = logoUrl;
+};
+
+// 头像上传处理（接入后端）
 const handleAvatarChange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  // 只允许图片
   if (!file.type.startsWith('image/')) {
     ElMessage.error('请选择图片文件');
     return;
   }
-  // 转base64
+  // // 简单大小限制（避免 413）
+  // if (file.size > 1024 * 1024) {
+  //   ElMessage.error('图片过大，请选择 1MB 以内的图片');
+  //   return;
+  // }
   const reader = new FileReader();
   reader.onload = async (event) => {
     const base64 = event.target.result;
-    try {
-      await userStore.updateProfile({ ...userStore.userInfo, avatar: base64 });
-      ElMessage.success('头像更新成功');
-    } catch (err) {
-      ElMessage.error('头像更新失败', err.message);
-    }
+    if (!userStore.userInfo) return;
+    await userStore.updateProfile({ avatar: base64 });
+    ElMessage.success('头像更新成功');
   };
   reader.readAsDataURL(file);
 };
 
-// 初始化数据
-const initData = async () => {
-  if (userStore.isLogin && userStore.userInfo) {
-    if (!dataLoaded.value) {
-      await Promise.all([
-        fetchAddresses(),
-        fetchFavorites()
-      ]);
-      dataLoaded.value = true;
-    }
-  }
-};
-
+// 初始化
 onMounted(async () => {
-  await initData();
-});
-
-// keep-alive 生命周期钩子
-onActivated(() => {
-  console.log('ProfileView 被激活');
-  // 每次激活时刷新用户数据
-  if (userStore.isLogin && userStore.userInfo) {
-    fetchAddresses();
-    fetchFavorites();
+  if (isLogin.value) {
+    await userStore.fetchProfile();
+    userForm.value = {
+      username: userStore.userInfo?.username || '',
+      realName: userStore.userInfo?.realName || '',
+      phone: userStore.userInfo?.phone || '',
+      email: userStore.userInfo?.email || '',
+      department: userStore.userInfo?.department || ''
+    };
+    fetchReservations();
   }
-});
-
-onDeactivated(() => {
-  console.log('ProfileView 被停用');
-  // 可以在这里保存一些状态
 });
 </script>
 
@@ -714,6 +606,143 @@ onDeactivated(() => {
   flex: 1;
   color: #2c3e50;
   font-size: 15px;
+}
+
+/* 预约统计与列表样式（适配教室预约） */
+.card-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.reservation-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin: 20px 0 30px;
+}
+
+.stat-item {
+  background: #f8faf8;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-number {
+  display: block;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2ecc71;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.reservation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.reservation-card {
+  background: #f8faf8;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.reservation-card:hover {
+  border-color: #2ecc71;
+  transform: translateY(-4px);
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.12);
+}
+
+.reservation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.reservation-header h3 {
+  font-size: 16px;
+  color: #2c3e50;
+  margin: 0 0 6px;
+}
+
+.reservation-meta {
+  color: #666;
+  font-size: 13px;
+}
+
+.reservation-body {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.reservation-body .label {
+  color: #888;
+}
+
+.reservation-actions {
+  margin-top: 12px;
+}
+
+.status-tag {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-pending {
+  background: #fff7e6;
+  color: #fa8c16;
+}
+
+.status-approved {
+  background: #f0f9f0;
+  color: #2ecc71;
+}
+
+.status-rejected {
+  background: #fef0f0;
+  color: #f56c6c;
+}
+
+.status-default {
+  background: #f4f4f5;
+  color: #909399;
+}
+
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 30px 0;
+}
+
+.btn-primary {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: #2ecc71;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #27ae60;
+}
+
+.helper-text {
+  margin-top: 18px;
+  color: #999;
+  font-size: 12px;
 }
 
 /* 地址列表样式 */

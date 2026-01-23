@@ -85,6 +85,17 @@ const createReservation = (req, res) => {
   res.json({ msg: '预约申请已提交', data: record });
 };
 
+/**
+ * 获取当前用户的预约记录
+ * 需要鉴权，从 token 获取 user_id
+ */
+const getMyReservations = (req, res) => {
+  const userId = req.user.user_id;
+  const list = reservations.filter(item => String(item.userId) === String(userId));
+  res.json({ data: list });
+};
+
 module.exports = {
-  createReservation
+  createReservation,
+  getMyReservations
 };

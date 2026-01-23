@@ -4,8 +4,9 @@ const app = express();
 
 // 跨域
 app.use(cors());
-// 解析json
-app.use(express.json());
+// 解析json（头像 base64 可能较大，适当放宽限制）
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 
 // 用户相关路由

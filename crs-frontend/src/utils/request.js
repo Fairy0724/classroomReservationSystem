@@ -2,7 +2,8 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // Vite环境变量写法
+  // 优先使用环境变量，未配置时回退到 /api（走 Vite 代理）
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
   timeout: 5000
 })
 
