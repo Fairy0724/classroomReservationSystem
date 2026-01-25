@@ -416,6 +416,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import request from '../utils/request'
 import {
   Bell, ArrowDown, ArrowRight, Phone, Message, Location
   , HomeFilled, Calendar, List, Clock, User, Setting, SwitchButton, Checked, Reading
@@ -591,9 +592,46 @@ const getStatusText = (status) => {
   const statusMap = {
     available: '可预约',
     occupied: '使用中',
-    maintenance: '维护中'
+    maintenance: '维护中',
+    '可用': '可预约',
+    '使用中': '使用中',
+    '维护中': '维护中'
   }
   return statusMap[status] || '可预约'
+}
+
+const normalizeStatusKey = (status) => {
+  if (status === '可用' || status === 'available') return 'available'
+  if (status === '使用中' || status === 'occupied') return 'occupied'
+  if (status === '维护中' || status === 'maintenance') return 'maintenance'
+  return 'available'
+}
+
+const normalizeEquipment = (value) => {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+  }
+  return []
+}
+
+const buildCategories = (rooms) => {
+  const typeMap = new Map()
+  rooms.forEach(room => {
+    const typeName = room.typeName || '其他'
+    if (!typeMap.has(typeName)) {
+      typeMap.set(typeName, typeMap.size + 1)
+    }
+  })
+
+  categories.value = Array.from(typeMap.entries()).map(([name, id]) => ({ id, name }))
+  rooms.forEach(room => {
+    const typeName = room.typeName || '其他'
+    room.categoryId = typeMap.get(typeName)
+  })
 }
 
 /**
@@ -713,21 +751,31 @@ const fetchCategories = async () => {
  * 获取教室列表
  */
 const fetchClassrooms = async () => {
-  // TODO: 从后端获取教室数据
-  // const res = await request.get('/api/classrooms')
-  // classrooms.value = res.data
+  try {
+    const res = await request.get('/api/classrooms')
+    const rooms = (res.data || []).map(item => {
+      const building = item.building || ''
+      const roomNum = item.roomNum || ''
+      const floor = item.floor ?? ''
+      const statusKey = normalizeStatusKey(item.status)
 
-  // 模拟数据
-  classrooms.value = [
-    { id: 1, name: 'A101 教室', categoryId: 1, typeName: '普通教室', location: '教学楼A-1层', capacity: 60, status: 'available', equipment: ['投影仪', '空调', '黑板'] },
-    { id: 2, name: 'A201 多媒体教室', categoryId: 2, typeName: '多媒体教室', location: '教学楼A-2层', capacity: 80, status: 'available', equipment: ['投影仪', '音响', '电脑', '空调'] },
-    { id: 3, name: 'B301 物理实验室', categoryId: 3, typeName: '实验室', location: '实验楼B-3层', capacity: 40, status: 'occupied', equipment: ['实验台', '投影仪', '通风设备'] },
-    { id: 4, name: 'C101 会议室', categoryId: 4, typeName: '会议室', location: '行政楼C-1层', capacity: 20, status: 'available', equipment: ['投影仪', '视频会议', '白板'] },
-    { id: 5, name: 'D501 学术报告厅', categoryId: 5, typeName: '报告厅', location: '图书馆D-5层', capacity: 200, status: 'maintenance', equipment: ['舞台', '音响', '灯光', '投影'] },
-    { id: 6, name: 'E102 自习室', categoryId: 6, typeName: '自习室', location: '图书馆E-1层', capacity: 100, status: 'available', equipment: ['空调', '插座', '台灯'] },
-    { id: 7, name: 'A102 教室', categoryId: 1, typeName: '普通教室', location: '教学楼A-1层', capacity: 50, status: 'available', equipment: ['投影仪', '空调'] },
-    { id: 8, name: 'A202 多媒体教室', categoryId: 2, typeName: '多媒体教室', location: '教学楼A-2层', capacity: 70, status: 'available', equipment: ['投影仪', '触摸屏', '录播设备'] }
-  ]
+      return {
+        id: item.classroomId,
+        name: `${building}${roomNum}`,
+        typeName: item.type || '普通教室',
+        location: floor ? `${building}-${floor}层` : building,
+        capacity: item.capacity,
+        status: statusKey,
+        equipment: normalizeEquipment(item.equipment),
+        imageUrl: item.mainImage || ''
+      }
+    })
+
+    buildCategories(rooms)
+    classrooms.value = rooms
+  } catch (error) {
+    ElMessage.error('获取教室数据失败')
+  }
 }
 
 /**

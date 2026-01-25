@@ -346,11 +346,18 @@ const fetchReservations = async () => {
           classroom = null;
         }
 
+        const classroomName = classroom
+          ? `${classroom.building || ''}${classroom.roomNum || ''}`
+          : `教室 ${item.classroomId}`;
+        const location = classroom
+          ? `${classroom.building || ''}-${classroom.floor || ''}层`
+          : '未知';
+
         return {
           id: item.id,
           classroomId: item.classroomId,
-          classroomName: classroom?.name || `教室 ${item.classroomId}`,
-          location: classroom?.location || '未知',
+          classroomName,
+          location,
           date: item.date,
           time: Array.isArray(item.timeSlots) ? item.timeSlots.join('、') : item.timeSlots,
           status: formatStatus(item.status),

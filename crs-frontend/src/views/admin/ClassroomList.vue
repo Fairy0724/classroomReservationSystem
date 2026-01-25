@@ -3,22 +3,31 @@
     <div class="content-wrapper">
       <div class="panel">
         <div class="panel-header">
-          <h2>教室维护（增删改）</h2>
+          <h2>教室维护</h2>
           <div class="actions">
             <el-input v-model="keyword" placeholder="按名称/位置搜索" clearable class="search-input"
               @keyup.enter="fetchClassrooms" />
             <el-button type="primary" @click="openCreateDialog">新增教室</el-button>
           </div>
         </div>
-
+        <!-- 教室列表 -->
         <el-table :data="classrooms" stripe border v-loading="loading" class="table">
-          <el-table-column prop="id" label="ID" width="80" />
-          <el-table-column prop="name" label="教室名称" min-width="160" />
-          <el-table-column prop="location" label="位置" min-width="140" />
+          <el-table-column prop="classroomId" label="ID" width="80" />
+          <el-table-column prop="building" label="楼号" width="100" />
+          <el-table-column prop="floor" label="楼层" width="80" />
+          <el-table-column prop="roomNum" label="教室编号" width="120" />
+          <el-table-column prop="deptName" label="所属学院" min-width="140" />
           <el-table-column prop="capacity" label="容量" width="100" />
+          <el-table-column prop="equipment" label="设备" min-width="160" />
+          <el-table-column prop="type" label="类型" width="120" />
           <el-table-column prop="status" label="状态" width="120">
             <template #default="scope">
               <el-tag :type="statusTag(scope.row.status)">{{ statusText(scope.row.status) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="mainImage" label="主图" min-width="140">
+            <template #default="scope">
+              <img :src="scope.row.mainImage" alt="主图" class="thumb" />
             </template>
           </el-table-column>
           <el-table-column label="操作" width="180" fixed="right">
@@ -30,44 +39,46 @@
         </el-table>
 
         <p class="helper-text">
-          注：当前为内存数据示例，后续可替换为数据库持久化。
+          数据来自数据库 classroom 表。
         </p>
       </div>
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="700px">
+    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="720px">
       <el-form :model="form" label-width="100px">
-        <el-form-item label="教室名称" required>
-          <el-input v-model="form.name" placeholder="例如：A201 多媒体教室" />
+        <el-form-item label="楼号" required>
+          <el-input v-model="form.building" placeholder="例如：一教" />
         </el-form-item>
-        <el-form-item label="位置" required>
-          <el-input v-model="form.location" placeholder="例如：教学楼A-2层" />
+        <el-form-item label="楼层" required>
+          <el-input-number v-model="form.floor" :min="1" />
+        </el-form-item>
+        <el-form-item label="教室编号" required>
+          <el-input v-model="form.roomNum" placeholder="例如：101" />
+        </el-form-item>
+        <el-form-item label="所属学院" required>
+          <el-input v-model="form.deptName" placeholder="例如：计算机学院" />
         </el-form-item>
         <el-form-item label="容量" required>
           <el-input-number v-model="form.capacity" :min="1" />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="form.status" placeholder="选择状态">
-            <el-option label="可预约" value="available" />
-            <el-option label="使用中" value="occupied" />
-            <el-option label="维护中" value="maintenance" />
+            <el-option label="可用" value="可用" />
+            <el-option label="维护中" value="维护中" />
           </el-select>
         </el-form-item>
-        <el-form-item label="简介">
-          <el-input v-model="form.brief" type="textarea" rows="2" placeholder="教室简介" />
+        <el-form-item label="教室类型" required>
+          <el-input v-model="form.type" placeholder="例如：普通教室/实验教室" />
         </el-form-item>
-        <el-form-item label="主图链接">
-          <el-input v-model="form.mainImage" placeholder="https://..." />
+        <el-form-item label="设备">
+          <el-input v-model="form.equipment" placeholder="例如：投影仪,空调,白板" />
         </el-form-item>
-        <el-form-item label="图片列表">
-          <el-input v-model="form.imagesInput" type="textarea" rows="2" placeholder="多张图片用英文逗号分隔" />
+        <el-form-item label="主图URL">
+          <el-input v-model="form.mainImage" placeholder="http://..." />
         </el-form-item>
-        <el-form-item label="参数">
-          <el-input v-model="form.paramsInput" type="textarea" rows="3" placeholder="每行一个参数，格式：键: 值\n示例：设备: 投影仪" />
-        </el-form-item>
-        <el-form-item label="详情">
-          <el-input v-model="form.detail" type="textarea" rows="4" placeholder="支持HTML" />
+        <el-form-item label="额外图片">
+          <el-input v-model="form.extraImagesInput" type="textarea" rows="2" placeholder="多张图片用英文逗号分隔" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -94,33 +105,34 @@ const keyword = ref('')
 
 const dialogVisible = ref(false)
 const form = ref({
-  id: null,
-  name: '',
-  location: '',
+  classroomId: null,
+  building: '',
+  floor: 1,
+  roomNum: '',
+  deptName: '',
   capacity: 1,
-  status: 'available',
-  brief: '',
+  equipment: '',
+  type: '',
+  status: '可用',
   mainImage: '',
-  imagesInput: '',
-  paramsInput: '',
-  detail: ''
+  extraImagesInput: ''
 })
 
-const dialogTitle = computed(() => (form.value.id ? '编辑教室' : '新增教室'))
+const dialogTitle = computed(() => (form.value.classroomId ? '编辑教室' : '新增教室'))
 
 const statusText = (status) => {
   const map = {
-    available: '可预约',
-    occupied: '使用中',
+    '可用': '可用',
+    '维护中': '维护中',
+    available: '可用',
     maintenance: '维护中'
   }
-  return map[status] || '未知'
+  return map[status] || status || '未知'
 }
 
 const statusTag = (status) => {
-  if (status === 'available') return 'success'
-  if (status === 'occupied') return 'warning'
-  if (status === 'maintenance') return 'danger'
+  if (status === '可用' || status === 'available') return 'success'
+  if (status === '维护中' || status === 'maintenance') return 'danger'
   return 'info'
 }
 
@@ -132,35 +144,20 @@ const parseImages = (input) => {
     .filter(Boolean)
 }
 
-// 解析参数（每行 key: value）
-const parseParams = (input) => {
-  return String(input || '')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
-    .map(line => {
-      const [key, ...rest] = line.split(':')
-      return {
-        key: (key || '').trim(),
-        value: rest.join(':').trim()
-      }
-    })
-    .filter(item => item.key)
-}
-
 // 初始化表单
 const resetForm = () => {
   form.value = {
-    id: null,
-    name: '',
-    location: '',
+    classroomId: null,
+    building: '',
+    floor: 1,
+    roomNum: '',
+    deptName: '',
     capacity: 1,
-    status: 'available',
-    brief: '',
+    equipment: '',
+    type: '',
+    status: '可用',
     mainImage: '',
-    imagesInput: '',
-    paramsInput: '',
-    detail: ''
+    extraImagesInput: ''
   }
 }
 
@@ -186,43 +183,43 @@ const openCreateDialog = () => {
 
 const openEditDialog = (row) => {
   form.value = {
-    id: row.id,
-    name: row.name,
-    location: row.location,
+    classroomId: row.classroomId,
+    building: row.building,
+    floor: row.floor,
+    roomNum: row.roomNum,
+    deptName: row.deptName,
     capacity: row.capacity,
-    status: row.status,
-    brief: row.brief || '',
+    equipment: row.equipment || '',
+    type: row.type || '',
+    status: row.status || '可用',
     mainImage: row.mainImage || '',
-    imagesInput: Array.isArray(row.images) ? row.images.join(',') : '',
-    paramsInput: Array.isArray(row.params)
-      ? row.params.map(item => `${item.key}: ${item.value}`).join('\n')
-      : '',
-    detail: row.detail || ''
+    extraImagesInput: Array.isArray(row.extraImages) ? row.extraImages.join(',') : ''
   }
   dialogVisible.value = true
 }
 
 const submitForm = async () => {
-  if (!form.value.name || !form.value.location || !form.value.capacity) {
+  if (!form.value.building || !form.value.roomNum || !form.value.deptName || !form.value.capacity || !form.value.type) {
     ElMessage.warning('请填写必填项')
     return
   }
 
   const payload = {
-    name: form.value.name,
-    location: form.value.location,
+    building: form.value.building,
+    floor: form.value.floor,
+    roomNum: form.value.roomNum,
+    deptName: form.value.deptName,
     capacity: form.value.capacity,
+    equipment: form.value.equipment,
+    type: form.value.type,
     status: form.value.status,
-    brief: form.value.brief,
     mainImage: form.value.mainImage,
-    images: parseImages(form.value.imagesInput),
-    params: parseParams(form.value.paramsInput),
-    detail: form.value.detail
+    extraImages: parseImages(form.value.extraImagesInput)
   }
 
   try {
-    if (form.value.id) {
-      await request.put(`/classrooms/${form.value.id}`, payload)
+    if (form.value.classroomId) {
+      await request.put(`/classrooms/${form.value.classroomId}`, payload)
       ElMessage.success('更新成功')
     } else {
       await request.post('/classrooms', payload)
@@ -240,7 +237,7 @@ const confirmDelete = async (row) => {
     await ElMessageBox.confirm(`确认删除教室【${row.name}】吗？`, '提示', {
       type: 'warning'
     })
-    await request.delete(`/classrooms/${row.id}`)
+    await request.delete(`/classrooms/${row.classroomId}`)
     ElMessage.success('删除成功')
     fetchClassrooms()
   } catch (error) {
@@ -291,5 +288,13 @@ onMounted(() => {
   margin-top: 16px;
   color: #999;
   font-size: 12px;
+}
+
+.thumb {
+  width: 56px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #eee;
 }
 </style>

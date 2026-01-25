@@ -6,6 +6,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '../utils/request'
+import logoUrl from '@/assets/images/logo.png'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -15,6 +16,13 @@ const keyword = ref('')
 
 // 教室列表数据
 const classrooms = ref([])
+
+// 教室名称：楼号 + 教室编号
+const formatRoomName = (room) => {
+  const building = room.building || ''
+  const roomNum = room.roomNum || ''
+  return `${building}${roomNum}` || '教室'
+}
 
 /** 获取教室列表（支持关键词筛选） */
 const fetchClassrooms = async () => {
@@ -54,14 +62,18 @@ onMounted(() => {
     </div>
 
     <div class="list">
-      <div v-for="room in classrooms" :key="room.id" class="card" @click="goToDetail(room.id)">
-        <img :src="room.mainImage" :alt="room.name" />
+      <div v-for="room in classrooms" :key="room.classroomId" class="card" @click="goToDetail(room.classroomId)">
+        <img :src="room.mainImage || logoUrl" :alt="formatRoomName(room)" />
         <div class="info">
-          <h3>{{ room.name }}</h3>
-          <p>{{ room.brief }}</p>
+          <h3>{{ formatRoomName(room) }}</h3>
+          <p>{{ room.type }} · {{ room.equipment || '设备待完善' }}</p>
           <div class="meta">
-            <span>地点：{{ room.location }}</span>
+            <span>地点：{{ room.building }}-{{ room.floor }}层</span>
             <span>容量：{{ room.capacity }}人</span>
+          </div>
+          <div class="meta">
+            <span>学院：{{ room.deptName }}</span>
+            <span>状态：{{ room.status }}</span>
           </div>
         </div>
       </div>

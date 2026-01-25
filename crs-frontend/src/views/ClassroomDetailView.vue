@@ -39,10 +39,10 @@
         ============================================================= -->
         <div class="product-gallery">
           <div class="main-image">
-            <img :src="classroom.mainImage" :alt="classroom.name" />
+            <img :src="classroom.mainImage" :alt="roomName" />
           </div>
           <div class="thumbnail-list">
-            <img v-for="(img, index) in classroom.images" :key="index" :src="img" :alt="classroom.name"
+            <img v-for="(img, index) in classroom.images" :key="index" :src="img" :alt="roomName"
               @click="changeMainImage(img)" :class="{ active: img === classroom.mainImage }" />
           </div>
         </div>
@@ -52,13 +52,13 @@
              说明：保留原样式模块，字段改为教室信息
         ============================================================= -->
         <div class="product-info">
-          <h1 class="product-name">{{ classroom.name }}</h1>
-          <div class="product-brief">{{ classroom.brief }}</div>
+          <h1 class="product-name">{{ roomName }}</h1>
+          <div class="product-brief">{{ classroom.type }} · {{ classroom.equipment || '设备待完善' }}</div>
 
           <!-- 教室基础信息（使用原 price-section 排版） -->
           <div class="price-section">
             <div class="current-price">可容纳 {{ classroom.capacity }} 人</div>
-            <div class="original-price">{{ classroom.location }}</div>
+            <div class="original-price">{{ locationText }}</div>
             <div class="discount-tag" :class="classroom.status">
               {{ statusText }}
             </div>
@@ -105,34 +105,29 @@
         <div class="tab-content">
           <!-- 教室介绍 -->
           <div v-if="currentTab === 'detail'" class="detail-content">
-            <div v-html="classroom.detail"></div>
+            <p>所属学院：{{ classroom.deptName }}</p>
+            <p>楼号：{{ classroom.building }}</p>
+            <p>楼层：{{ classroom.floor }}</p>
+            <p>教室编号：{{ classroom.roomNum }}</p>
+            <p>教室类型：{{ classroom.type }}</p>
+            <p>设备：{{ classroom.equipment || '设备待完善' }}</p>
           </div>
           <!-- 设备参数 -->
           <div v-if="currentTab === 'params'" class="params-content">
             <table>
-              <tr v-for="param in classroom.params" :key="param.key">
-                <td class="param-key">{{ param.key }}</td>
-                <td class="param-value">{{ param.value }}</td>
+              <tr>
+                <td class="param-key">容量</td>
+                <td class="param-value">{{ classroom.capacity }} 人</td>
+              </tr>
+              <tr>
+                <td class="param-key">状态</td>
+                <td class="param-value">{{ statusText }}</td>
+              </tr>
+              <tr>
+                <td class="param-key">设备</td>
+                <td class="param-value">{{ classroom.equipment || '设备待完善' }}</td>
               </tr>
             </table>
-          </div>
-          <!-- 使用评价 -->
-          <div v-if="currentTab === 'reviews'" class="reviews-content">
-            <div v-for="review in classroom.reviews" :key="review.id" class="review-item">
-              <div class="user-info">
-                <img :src="review.userAvatar" :alt="review.userName" />
-                <span>{{ review.userName }}</span>
-                <div class="rating">
-                  <i v-for="n in 5" :key="n" :class="['icon-star', { filled: n <= review.rating }]">
-                  </i>
-                </div>
-              </div>
-              <div class="review-content">{{ review.content }}</div>
-              <div class="review-images">
-                <img v-for="img in review.images" :key="img" :src="img" />
-              </div>
-              <div class="review-time">{{ review.time }}</div>
-            </div>
           </div>
         </div>
       </div>
@@ -162,28 +157,28 @@ const userStore = useUserStore()
 
 // ==================== 基础数据 ====================
 const classroom = ref({
-  id: null,
-  name: '',
-  brief: '',
-  mainImage: '',
-  images: [],
+  classroomId: null,
+  building: '',
+  floor: 1,
+  roomNum: '',
+  deptName: '',
   capacity: 0,
-  location: '',
-  status: 'available',
-  detail: '',
-  params: [],
-  reviews: []
+  equipment: '',
+  type: '',
+  status: '',
+  mainImage: '',
+  extraImages: [],
+  images: []
 })
 
 const searchQuery = ref('')
 const currentTab = ref('detail')
 const isFavorite = ref(false)
 
-// Tabs 配置（保留原结构，仅改名称）
+// Tabs 配置（保留结构，内容改为数据库字段展示）
 const tabs = [
   { key: 'detail', label: '教室介绍' },
-  { key: 'params', label: '设备参数' },
-  { key: 'reviews', label: '使用评价' }
+  { key: 'params', label: '设备参数' }
 ]
 
 // 是否为教师角色
@@ -194,9 +189,23 @@ const statusText = computed(() => {
   const map = {
     available: '可预约',
     occupied: '使用中',
-    maintenance: '维护中'
+    maintenance: '维护中',
+    '可用': '可预约',
+    '维护中': '维护中'
   }
-  return map[classroom.value.status] || '可预约'
+  return map[classroom.value.status] || classroom.value.status || '可预约'
+})
+
+// 教室名称：楼号 + 教室编号
+const roomName = computed(() => {
+  const building = classroom.value.building || ''
+  const roomNum = classroom.value.roomNum || ''
+  return `${building}${roomNum}` || '教室'
+})
+
+// 位置信息
+const locationText = computed(() => {
+  return `${classroom.value.building}-${classroom.value.floor}层`
 })
 
 // ==================== 页面交互方法 ====================
@@ -255,74 +264,39 @@ const goToReserve = () => {
     router.push('/login')
     return
   }
-  router.push(`/classroom/${classroom.value.id}/reserve`)
+  router.push(`/classroom/${classroom.value.classroomId}/reserve`)
 }
 
 // ==================== 获取教室详情 ====================
 
 /**
  * 说明：
- * 1. 优先请求后端接口
- * 2. 若接口不可用，则使用模拟数据，保证页面可展示
+ * 1. 请求后端接口
+ * 2. 若教室不存在则跳回列表
  */
 const fetchClassroom = async () => {
+  let res = null
   try {
-    // TODO: 替换为真实接口
-    const res = await request.get('/classrooms', {
+    res = await request.get('/classrooms', {
       params: { id: route.params.id }
     })
-
-    if (Array.isArray(res) && res.length > 0) {
-      classroom.value = res[0]
-    } else if (res && res.id) {
-      classroom.value = res
-    } else {
-      throw new Error('教室不存在')
-    }
   } catch (error) {
-    // 使用模拟数据兜底
-    classroom.value = {
-      id: route.params.id,
-      name: 'A201 多媒体教室',
-      brief: '配备投影仪、音响与录播设备，适用于教学与讲座。',
-      mainImage: 'https://picsum.photos/seed/classroom1/800/600',
-      images: [
-        'https://picsum.photos/seed/classroom1/800/600',
-        'https://picsum.photos/seed/classroom2/800/600',
-        'https://picsum.photos/seed/classroom3/800/600'
-      ],
-      capacity: 80,
-      location: '教学楼A-2层',
-      status: 'available',
-      detail: '<p>本教室为多媒体教学用房，配备高清投影、音响、白板和录播系统，适用于课程教学、公开课与学术讲座。</p>',
-      params: [
-        { key: '教室类型', value: '多媒体教室' },
-        { key: '面积', value: '120㎡' },
-        { key: '设备', value: '投影仪 / 录播 / 音响 / 空调' },
-        { key: '插座', value: '每排配备电源插座' },
-        { key: '网络', value: '校园网覆盖' }
-      ],
-      reviews: [
-        {
-          id: 1,
-          userName: '张同学',
-          userAvatar: 'https://picsum.photos/seed/user1/60/60',
-          rating: 5,
-          content: '设备齐全，环境很好，适合上机教学。',
-          images: ['https://picsum.photos/seed/review1/120/120'],
-          time: '2026-01-15'
-        }
-      ]
-    }
+    ElMessage.error('教室信息加载失败')
+    router.push('/classrooms')
+    return
   }
 
-  // 确保缩略图包含主图
-  if (!classroom.value.images) {
-    classroom.value.images = []
+  if (Array.isArray(res) && res.length > 0) {
+    classroom.value = res[0]
+  } else {
+    throw new Error('教室不存在')
   }
-  if (!classroom.value.images.includes(classroom.value.mainImage)) {
-    classroom.value.images.unshift(classroom.value.mainImage)
-  }
+
+  // 统一图片列表
+  classroom.value.images = [
+    classroom.value.mainImage,
+    ...(Array.isArray(classroom.value.extraImages) ? classroom.value.extraImages : [])
+  ].filter(Boolean)
 }
 
 // 退出登录

@@ -17,11 +17,12 @@ const userStore = useUserStore()
 
 // ==================== 教室信息（展示用） ====================
 const classroom = ref({
-  id: null,
-  name: '',
-  location: '',
+  classroomId: null,
+  building: '',
+  floor: 1,
+  roomNum: '',
   capacity: 0,
-  status: 'available'
+  status: ''
 })
 
 // ==================== 预约表单 ====================
@@ -34,14 +35,8 @@ const form = ref({
   purposeType: 'nonTeaching' // teaching | nonTeaching
 })
 
-// 可选时段（示例数据，后续可由后端返回）
-const timeSlots = ref([
-  { id: 1, label: '第1-2节 08:00-10:00' },
-  { id: 2, label: '第3-4节 10:00-12:00' },
-  { id: 3, label: '第5-6节 14:00-16:00' },
-  { id: 4, label: '第7-8节 16:00-18:00' },
-  { id: 5, label: '第9-10节 19:00-21:00' }
-])
+// 可选时段（来自后端 class_period 表）
+const timeSlots = ref([])
 
 // ==================== 计算与校验 ====================
 
@@ -82,6 +77,20 @@ const fetchClassroom = async () => {
   } catch (error) {
     ElMessage.error('教室信息加载失败')
     router.push('/classrooms')
+  }
+}
+
+// 获取节次列表（默认开放第1节-第10节）
+const fetchPeriods = async () => {
+  try {
+    const res = await request.get('/class-periods')
+    const list = Array.isArray(res) ? res : []
+    timeSlots.value = list.map(item => ({
+      id: item.period_id,
+      label: `${item.period_name} ${item.start_time}-${item.end_time}`
+    }))
+  } catch (error) {
+    ElMessage.error('获取节次列表失败')
   }
 }
 
@@ -133,7 +142,7 @@ const submitReservation = async () => {
   // 6. 提交预约
   try {
     const payload = {
-      classroomId: classroom.value.id,
+      classroomId: classroom.value.classroomId,
       userId: userStore.userInfo?.id,
       role: userStore.userInfo?.role,
       date: form.value.date,
@@ -154,6 +163,7 @@ const submitReservation = async () => {
 
 onMounted(() => {
   fetchClassroom()
+  fetchPeriods()
 })
 </script>
 
@@ -166,9 +176,9 @@ onMounted(() => {
 
     <!-- 教室基本信息展示（确保用户知道当前选择的教室） -->
     <div class="classroom-info">
-      <h2>{{ classroom.name }}</h2>
+      <h2>{{ classroom.building }}{{ classroom.roomNum }}</h2>
       <div class="meta">
-        <span>位置：{{ classroom.location }}</span>
+        <span>位置：{{ classroom.building }}-{{ classroom.floor }}层</span>
         <span>容量：{{ classroom.capacity }} 人</span>
       </div>
     </div>
