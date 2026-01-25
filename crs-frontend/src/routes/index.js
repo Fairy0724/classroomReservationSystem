@@ -1,8 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { createPinia } from 'pinia'
-// 获取用户状态存储
+// 获取用户状态存储（与 App 共用同一 Pinia 实例）
+import pinia from '@/stores/pinia'
 import { useUserStore } from '@/stores/userStore'
-const pinia = createPinia()
 const userStore = useUserStore(pinia)
 
 // 懒加载页面
@@ -12,6 +11,10 @@ const Layout = () => import('@/components/Layout.vue')
 const HomeView = () => import('@/views/HomeView.vue')
 const AdminView = () => import('@/views/admin/AdminView.vue')
 const AdminClassroomList = () => import('@/views/admin/ClassroomList.vue')
+const AdminClassroomTypeList = () => import('@/views/admin/ClassroomTypeList.vue')
+const AdminTeacherList = () => import('@/views/admin/TeacherList.vue')
+const AdminStudentList = () => import('@/views/admin/StudentList.vue')
+const AdminProfileView = () => import('@/views/admin/AdminProfileView.vue')
 const ClassroomView = () => import('@/views/ClassroomView.vue')
 const ClassroomDetailView = () => import('@/views/ClassroomDetailView.vue')
 const ReservationView = () => import('@/views/ReservationView.vue')
@@ -38,14 +41,42 @@ const routes = [
         path: 'admin',
         name: 'admin',
         component: AdminView,
-        meta: { keepAlive: true, isAdmin: true } // 管理员页需要缓存
+        meta: { keepAlive: true, isAdmin: true, requiresAuth: true } // 管理员页需要缓存
       },
       {
         // 管理员：教室管理
         path: 'admin/classroom',
         name: 'adminClassroom',
         component: AdminClassroomList,
-        meta: { keepAlive: false, isAdmin: true }
+        meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
+      },
+      {
+        // 管理员：教室类型管理
+        path: 'admin/classroom-type',
+        name: 'adminClassroomType',
+        component: AdminClassroomTypeList,
+        meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
+      },
+      {
+        // 管理员：教师信息
+        path: 'admin/teachers',
+        name: 'adminTeachers',
+        component: AdminTeacherList,
+        meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
+      },
+      {
+        // 管理员：学生信息
+        path: 'admin/students',
+        name: 'adminStudents',
+        component: AdminStudentList,
+        meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
+      },
+      {
+        // 管理员：个人信息
+        path: 'admin/profile',
+        name: 'adminProfile',
+        component: AdminProfileView,
+        meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
       },
       {
         // 教室列表页
@@ -102,6 +133,13 @@ const routes = [
         name: 'notice',
         component: PlaceholderView,
         meta: { keepAlive: true, title: '系统公告' }
+      },
+      {
+        // 使用帮助
+        path: 'help',
+        name: 'help',
+        component: PlaceholderView,
+        meta: { keepAlive: true, title: '使用帮助' }
       },
       {
         // 个人中心

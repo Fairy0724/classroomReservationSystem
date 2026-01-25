@@ -56,17 +56,17 @@
             </el-icon>
             <span>用户信息</span>
           </template>
-          <el-menu-item index="/admin/users">
-            <el-icon>
-              <UserFilled />
-            </el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
           <el-menu-item index="/admin/teachers">
             <el-icon>
               <Avatar />
             </el-icon>
             <span>教师信息</span>
+          </el-menu-item>
+          <el-menu-item index="/admin/students">
+            <el-icon>
+              <UserFilled />
+            </el-icon>
+            <span>学生信息</span>
           </el-menu-item>
           <el-menu-item index="/admin/profile">
             <el-icon>

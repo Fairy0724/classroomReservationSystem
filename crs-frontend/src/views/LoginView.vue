@@ -180,6 +180,7 @@ const handleLogin = async () => {
     console.log('用户角色:', userStore.role === 'admin' ? '管理员' : '普通用户');
     if (userStore.role === 'admin') {
       router.push('/admin');
+      console.log(userStore.role)
     } else {
       router.push('/');
     }

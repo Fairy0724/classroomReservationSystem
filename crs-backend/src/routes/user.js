@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const auth = require('../middlewares/auth');
+const requireAdmin = require('../middlewares/admin');
 
 // 登录接口
 router.post('/login', userController.login);
@@ -19,6 +20,18 @@ router.put('/password', auth, userController.changePassword);
 router.put('/phone', auth, userController.updatePhone);
 // 获取个人信息接口
 router.get('/info', userController.getUserInfo);
+
+// ==================== 管理员用户管理 ====================
+// 列表查询（教师/学生）
+router.get('/admin/users', auth, requireAdmin, userController.adminListUsers);
+// 创建用户（教师/学生）
+router.post('/admin/users', auth, requireAdmin, userController.adminCreateUser);
+// 更新用户（教师/学生）
+router.put('/admin/users/:id', auth, requireAdmin, userController.adminUpdateUser);
+// 删除用户（教师/学生）
+router.delete('/admin/users/:id', auth, requireAdmin, userController.adminDeleteUser);
+// 重置密码
+router.put('/admin/users/:id/reset-password', auth, requireAdmin, userController.adminResetPassword);
 
 
 module.exports = router;

@@ -15,6 +15,9 @@ app.use('/api/user', require('./src/routes/user'));
 // 教室相关路由
 app.use('/api/classrooms', require('./src/routes/classroom'));
 
+// 教室类型相关路由
+app.use('/api/classroom-types', require('./src/routes/classroomType'));
+
 // 预约相关路由
 app.use('/api/reservations', require('./src/routes/reservation'));
 
