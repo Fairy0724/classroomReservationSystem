@@ -1,68 +1,128 @@
-<script setup>
-/**
- * 教室列表页（对接后端 /api/classrooms）
- * 目的：提供列表入口，方便从列表跳转到详情页
- */
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import request from '../utils/request'
-import logoUrl from '@/assets/images/logo.png'
-import { ElMessage } from 'element-plus'
-
-const router = useRouter()
-
-// 搜索关键词
-const keyword = ref('')
-
-// 教室列表数据
-const classrooms = ref([])
-
-// 教室名称：楼号 + 教室编号
-const formatRoomName = (room) => {
-  const building = room.building || ''
-  const roomNum = room.roomNum || ''
-  return `${building}${roomNum}` || '教室'
-}
-
-/** 获取教室列表（支持关键词筛选） */
-const fetchClassrooms = async () => {
-  try {
-    const res = await request.get('/classrooms', {
-      params: { keyword: keyword.value.trim() }
-    })
-    classrooms.value = Array.isArray(res) ? res : []
-  } catch (error) {
-    ElMessage.error('获取教室列表失败')
-  }
-}
-
-/** 搜索 */
-const handleSearch = () => {
-  fetchClassrooms()
-}
-
-/** 跳转到教室详情 */
-const goToDetail = (id) => {
-  router.push(`/classroom/${id}`)
-}
-
-onMounted(() => {
-  fetchClassrooms()
-})
-</script>
-
 <template>
   <div class="classroom-list-page">
-    <div class="header">
-      <h1>教室列表</h1>
-      <div class="search">
-        <input v-model="keyword" placeholder="输入教室名称或位置" @keyup.enter="handleSearch" />
-        <button @click="handleSearch">搜索</button>
+    <!-- ==================== 顶部导航（与首页一致） ==================== -->
+    <nav class="nav-container">
+      <div class="nav-wrapper">
+        <div class="logo">
+          <!-- <img src="../assets/images/logo.png" alt="教室预约系统 Logo"> -->
+          <span class="logo-text">教室预约系统</span>
+        </div>
+
+        <div class="search-bar">
+          <input type="text" v-model="keyword" placeholder="搜索教室名称、位置..." @keyup.enter="handleSearch">
+          <button class="search-btn" @click="handleSearch">搜索</button>
+        </div>
+
+        <div class="nav-links">
+          <RouterLink to="/" class="nav-link">
+            <el-icon>
+              <HomeFilled />
+            </el-icon> 首页
+          </RouterLink>
+          <RouterLink to="/my-reservations" class="nav-link">
+            <el-icon>
+              <Calendar />
+            </el-icon> 我的预约
+          </RouterLink>
+
+          <template v-if="userStore.token">
+            <RouterLink v-if="userStore.userInfo?.role === 'teacher'" to="/approval" class="nav-link">
+              <el-icon>
+                <Checked />
+              </el-icon> 审批管理
+            </RouterLink>
+            <el-dropdown trigger="click">
+              <div class="user-dropdown">
+                <el-icon>
+                  <User />
+                </el-icon>
+                <span class="user-name">{{ userStore.userInfo?.realName }}</span>
+                <el-icon>
+                  <ArrowDown />
+                </el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="router.push('/profile')">
+                    <el-icon>
+                      <User />
+                    </el-icon> 个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item @click="router.push('/settings')">
+                    <el-icon>
+                      <Setting />
+                    </el-icon> 账号设置
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click="handleLogout">
+                    <el-icon>
+                      <SwitchButton />
+                    </el-icon> 退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </template>
+          <!-- 未登录时显示登录按钮 -->
+          <template v-else>
+            <RouterLink to="/login" class="nav-link login-btn">
+              <el-icon>
+                <User />
+              </el-icon> 登录
+            </RouterLink>
+          </template>
+        </div>
       </div>
+    </nav>
+
+    <!-- ==================== 筛选区域 ==================== -->
+    <div class="filter-panel">
+      <div class="filter-item">
+        <label>教室类型</label>
+        <select v-model="filters.type">
+          <option value="">全部</option>
+          <option v-for="item in typeOptions" :key="item" :value="item">{{ item }}</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label>楼层</label>
+        <select v-model="filters.floor">
+          <option value="">全部</option>
+          <option v-for="item in floorOptions" :key="item" :value="item">{{ item }}</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label>教学楼</label>
+        <select v-model="filters.building">
+          <option value="">全部</option>
+          <option v-for="item in buildingOptions" :key="item" :value="item">{{ item }}</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label>院系</label>
+        <select v-model="filters.department">
+          <option value="">全部</option>
+          <option v-for="item in departmentOptions" :key="item" :value="item">{{ item }}</option>
+        </select>
+      </div>
+
+      <div class="filter-item">
+        <label>状态</label>
+        <select v-model="filters.status">
+          <option value="">全部</option>
+          <option v-for="item in statusOptions" :key="item" :value="item">{{ item }}</option>
+        </select>
+      </div>
+
+      <button class="reset-btn" @click="resetFilters">清空筛选</button>
     </div>
 
+    <!-- ==================== 教室卡片列表 ==================== -->
     <div class="list">
-      <div v-for="room in classrooms" :key="room.classroomId" class="card" @click="goToDetail(room.classroomId)">
+      <div v-for="room in filteredClassrooms" :key="room.classroomId" class="card"
+        @click="goToDetail(room.classroomId)">
         <img :src="room.mainImage || logoUrl" :alt="formatRoomName(room)" />
         <div class="info">
           <h3>{{ formatRoomName(room) }}</h3>
@@ -80,44 +140,221 @@ onMounted(() => {
     </div>
   </div>
 </template>
+<script setup>
+/**
+ * 教室列表页
+ * - 顶部导航与首页保持一致
+ * - 支持多条件筛选（类型/设备/教学楼）
+ * - 条件可选：未选中时默认展示全部教室
+ */
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '../stores/userStore'
+import request from '../utils/request'
+import logoUrl from '@/assets/images/logo.png'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  HomeFilled, Calendar, User, Setting, SwitchButton, Checked,
+  ArrowDown
+} from '@element-plus/icons-vue'
+
+const router = useRouter()
+const userStore = useUserStore()
+
+// ==================== 搜索与筛选条件 ====================
+const keyword = ref('')
+const filters = ref({
+  type: '',
+  building: '',
+  floor: '',
+  department: '',
+  status: ''
+})
+
+// ==================== 教室数据与筛选项 ====================
+const classrooms = ref([])
+const typeOptions = ref([])
+const buildingOptions = ref([])
+const floorOptions = ref([])
+const departmentOptions = ref([])
+const statusOptions = ref([])
+
+// 教室名称：楼号 + 教室编号
+const formatRoomName = (room) => {
+  const building = room.building || ''
+  const roomNum = room.roomNum || ''
+  return `${building}${roomNum}` || '教室'
+}
+
+// 构建筛选项（类型/教学楼/楼层/院系/状态）
+const buildFilterOptions = (rooms) => {
+  const typeSet = new Set()
+  const buildingSet = new Set()
+  const floorSet = new Set()
+  const departmentSet = new Set()
+  const statusSet = new Set()
+
+  rooms.forEach(room => {
+    if (room.type) typeSet.add(room.type)
+    if (room.building) buildingSet.add(room.building)
+    if (room.floor !== undefined && room.floor !== null && room.floor !== '') floorSet.add(room.floor)
+    if (room.deptName) departmentSet.add(room.deptName)
+    if (room.status) statusSet.add(room.status)
+  })
+
+  typeOptions.value = Array.from(typeSet)
+  buildingOptions.value = Array.from(buildingSet)
+  floorOptions.value = Array.from(floorSet)
+  departmentOptions.value = Array.from(departmentSet)
+  statusOptions.value = Array.from(statusSet)
+}
+
+// ==================== 过滤后的教室列表 ====================
+const filteredClassrooms = computed(() => {
+  const key = keyword.value.trim().toLowerCase()
+  return classrooms.value.filter(room => {
+    // 关键字匹配：教室名称或位置
+    const name = formatRoomName(room).toLowerCase()
+    const location = `${room.building || ''}-${room.floor || ''}`.toLowerCase()
+    const matchKeyword = !key || name.includes(key) || location.includes(key)
+
+    // 类型筛选
+    const matchType = !filters.value.type || room.type === filters.value.type
+
+    // 教学楼筛选
+    const matchBuilding = !filters.value.building || room.building === filters.value.building
+    // 楼层筛选
+    const matchFloor = !filters.value.floor || String(room.floor) === String(filters.value.floor)
+    // 院系筛选
+    const matchDepartment = !filters.value.department || room.deptName === filters.value.department
+    // 状态筛选
+    const matchStatus = !filters.value.status || room.status === filters.value.status
+
+    return matchKeyword && matchType && matchBuilding && matchFloor && matchDepartment && matchStatus
+  })
+})
+
+// ==================== 数据获取 ====================
+const fetchClassrooms = async () => {
+  try {
+    const res = await request.get('/classrooms')
+    classrooms.value = Array.isArray(res) ? res : []
+    buildFilterOptions(classrooms.value)
+  } catch (error) {
+    ElMessage.error('获取教室列表失败')
+  }
+}
+
+// ==================== 事件处理 ====================
+const handleSearch = () => {
+  // 搜索由 computed 自动生效，保留方法用于回车和按钮触发
+}
+// 重置筛选条件
+const resetFilters = () => {
+  filters.value = { type: '', building: '', floor: '', department: '', status: '' }
+  keyword.value = ''
+}
+
+const goToDetail = (id) => {
+  router.push(`/classroom/${id}`)
+}
+
+const handleLogout = async () => {
+  try {
+    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    userStore.logout()
+    router.push('/login')
+  } catch {
+    // 用户取消
+  }
+}
+
+onMounted(() => {
+  fetchClassrooms()
+})
+</script>
+
+
 
 <style scoped>
+.logo-text {
+  font-size: 20px;
+  font-weight: 600;
+}
 .classroom-list-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 40px 20px;
+  min-height: 100vh;
+  background: #f0f4f8;
 }
 
-.header {
+.filter-panel {
+  max-width: 1400px;
+  margin: 16px auto 20px;
+  padding: 18px 20px;
+  background: #ffffff;
+  border-radius: 16px;
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
   align-items: center;
-  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
-.search {
+.filter-item {
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
 }
 
-.search input {
+.filter-item label {
+  font-size: 12px;
+  color: #8a94a6;
+}
+
+.filter-item select {
   height: 36px;
-  padding: 0 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #f8fafc;
+  transition: all 0.2s ease;
 }
 
-.search button {
+.filter-item select[multiple] {
+  height: 96px;
+  padding: 8px 10px;
+}
+
+.filter-item select:focus {
+  outline: none;
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.15);
+}
+
+.reset-btn {
   height: 36px;
   padding: 0 16px;
   border: none;
-  background: #409eff;
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
   color: #fff;
-  border-radius: 6px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reset-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(64, 158, 255, 0.25);
 }
 
 .list {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 20px 40px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
@@ -125,41 +362,43 @@ onMounted(() => {
 
 .card {
   background: #fff;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   cursor: pointer;
-  transition: transform 0.3s;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
 .card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.15);
 }
 
 .card img {
   width: 100%;
-  height: 180px;
+  height: 200px;
   object-fit: cover;
 }
 
 .info {
-  padding: 16px;
+  padding: 18px;
 }
 
 .info h3 {
   margin: 0 0 8px;
   font-size: 16px;
+  color: #1f2937;
 }
 
 .info p {
-  color: #666;
-  margin: 0 0 10px;
+  color: #6b7280;
+  margin: 0 0 12px;
 }
 
 .meta {
   display: flex;
   justify-content: space-between;
-  color: #999;
+  color: #94a3b8;
   font-size: 12px;
 }
 

@@ -19,7 +19,7 @@
       <div class="nav-wrapper">
         <!-- Logo -->
         <div class="logo">
-          <img src="../assets/images/logo.png" alt="教室预约系统 Logo">
+          <!-- <img src="../assets/images/logo.png" alt="教室预约系统 Logo"> -->
           <span class="logo-text">教室预约系统</span>
         </div>
 
@@ -63,7 +63,7 @@
                 <!-- 用户头像 -->
                 <el-avatar :size="32" class="user-avatar">
                   <!-- 显示用户头像：首字母 -->
-                  {{ userStore.userInfo?.realName?.charAt(0) || '用' }}
+                  {{ userStore.userInfo?.realName?.charAt(0) }}
                 </el-avatar>
                 <!-- 显示真实姓名 -->
                 <span class="user-name">{{ userStore.userInfo?.realName }}</span>
@@ -752,8 +752,8 @@ const fetchCategories = async () => {
  */
 const fetchClassrooms = async () => {
   try {
-    const res = await request.get('/api/classrooms')
-    const rooms = (res.data || []).map(item => {
+    const res = await request.get('/classrooms')
+    const rooms = (res || []).map(item => {
       const building = item.building || ''
       const roomNum = item.roomNum || ''
       const floor = item.floor ?? ''
@@ -933,14 +933,14 @@ onMounted(async () => {
   gap: 10px;
 }
 
-.logo img {
+/* .logo img {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-}
+} */
 
 .logo-text {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--primary-color);
 }

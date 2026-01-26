@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import request from '../utils/request'
 
+// 规范化用户信息字段
 const normalizeUser = (user) => {
   if (!user) return user
   return {
@@ -29,7 +30,7 @@ export const useUserStore = defineStore('user', {
       // 角色
       this.role = res.user.role
       // 真实姓名
-      this.realName = this.userInfo?.realName
+      this.realName = this.userInfo?.realName 
       localStorage.setItem('token', res.token)
       return res
     },
