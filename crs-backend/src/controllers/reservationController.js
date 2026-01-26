@@ -1,98 +1,183 @@
-// 预约控制器（后端示例：使用内存数据，后续可替换为数据库）
-
-let reservationId = 1000;
-const reservations = [];
+// 预约控制器（数据库版）
+const { pool } = require('../db/db');
 
 /**
  * 提交预约申请
  * body: {
  *   classroomId, userId, role,
- *   date, timeSlots[], attendeeCount,
- *   activityName, purpose, purposeType
+ *   date, startTime, endTime,
+ *   timeSlots[], attendeeCount,
+ *   activityName, activityType, purpose
  * }
  */
-const createReservation = (req, res) => {
+const findTeacherMappingTable = async () => 'teacher_classroom_relation';
+const createReservation = async (req, res) => {
   const {
     classroomId,
-    userId,
-    role,
+    userId: bodyUserId,
+    role: bodyRole,
     date,
+    startTime,
+    endTime,
     timeSlots,
+    periodIds,
     attendeeCount,
     activityName,
-    purpose,
-    purposeType
+    activityType,
+    purpose
   } = req.body || {};
 
-  // 1. 基础必填校验
-  if (!classroomId || !userId || !date || !timeSlots || !attendeeCount || !activityName || !purpose) {
-    return res.status(400).json({ msg: '参数不完整' });
+  try {
+    // 1. 统一用户信息（优先使用 token）
+    const userId = req.user?.user_id || bodyUserId;
+    const role = req.user?.role || bodyRole;
+
+    // 2. 基础必填校验
+    if (!classroomId || !userId || !date || !attendeeCount || !activityName || !purpose) {
+      return res.status(400).json({ msg: '参数不完整' });
+    }
+
+    // 2. 日期校验（未来30天内）
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const maxDate = new Date(today);
+    maxDate.setDate(maxDate.getDate() + 30);
+    if (selectedDate < today || selectedDate > maxDate) {
+      return res.status(400).json({ msg: '请选择未来一月的有效日期' });
+    }
+
+    // 3. 人数校验
+    if (Number(attendeeCount) <= 0) {
+      return res.status(400).json({ msg: '参与人数请输入正整数' });
+    }
+
+    // 4. 解析时间段
+    let start = startTime;
+    let end = endTime;
+    if ((!start || !end) && Array.isArray(timeSlots)) {
+      const times = timeSlots
+        .map(label => {
+          const match = String(label).match(/(\d{2}:\d{2})-(\d{2}:\d{2})/);
+          return match ? { start: match[1], end: match[2] } : null;
+        })
+        .filter(Boolean);
+      if (times.length) {
+        const starts = times.map(t => t.start).sort();
+        const ends = times.map(t => t.end).sort();
+        start = starts[0];
+        end = ends[ends.length - 1];
+      }
+    }
+
+    if (!start || !end) {
+      return res.status(400).json({ msg: '请选择预约时段' });
+    }
+
+    // 5. 校验教室状态与容量
+    const [classroomRows] = await pool.query(
+      'SELECT classroom_id, capacity, status FROM classroom WHERE classroom_id = ? LIMIT 1',
+      [classroomId]
+    );
+    if (!classroomRows.length) {
+      return res.status(404).json({ msg: '教室不存在' });
+    }
+    const classroom = classroomRows[0];
+    if (classroom.status && classroom.status !== '可用' && classroom.status !== 'available') {
+      return res.status(400).json({ msg: '该教室当前不可预约' });
+    }
+    if (Number(attendeeCount) > Number(classroom.capacity)) {
+      return res.status(400).json({ msg: '参与人数不得超过教室最大容量人数' });
+    }
+
+    // 6. 冲突检测（同教室+同日期+时间段重叠）
+    const [conflictRows] = await pool.query(
+      `SELECT reservation_id FROM reservation
+       WHERE classroom_id = ? AND date = ?
+         AND status IN ('待审批','已通过')
+         AND NOT (end_time <= ? OR start_time >= ?)
+       LIMIT 1`,
+      [classroomId, date, start, end]
+    );
+    if (conflictRows.length) {
+      return res.status(409).json({ msg: '该时段已被占用' });
+    }
+
+    // 7. 找到负责该教室的老师（用于流转审批）
+    const mappingTable = await findTeacherMappingTable();
+    if (!mappingTable) {
+      return res.status(400).json({ msg: '未找到教室-教师映射表，请检查数据库表名' });
+    }
+
+    const [teacherRows] = await pool.query(
+      `SELECT teacher_id FROM ${mappingTable} WHERE classroom_id = ? ORDER BY id ASC LIMIT 1`,
+      [classroomId]
+    );
+    const assignedTeacherId = teacherRows.length ? teacherRows[0].teacher_id : null;
+    if (!assignedTeacherId) {
+      return res.status(400).json({ msg: '未配置该教室的负责人老师' });
+    }
+
+    // 8. 状态规则：教师教学申请直接通过
+    const isTeaching = String(activityType) === '教学';
+    const status = role === 'teacher' && isTeaching ? '已通过' : '待审批';
+    const normalizedPeriodIds = Array.isArray(periodIds)
+      ? periodIds
+      : Array.isArray(timeSlots)
+        ? timeSlots
+        : [];
+
+    // 9. 写入预约记录（时间字段交给数据库默认值）
+    const [result] = await pool.query(
+      `INSERT INTO reservation
+      (applicant_id, classroom_id, period_ids, date, start_time, end_time,
+       activity_name, activity_type, participant_count, purpose,
+       status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ,
+      [
+        userId,
+        classroomId,
+        JSON.stringify(normalizedPeriodIds),
+        date,
+        start,
+        end,
+        activityName,
+        activityType || '自习',
+        attendeeCount,
+        purpose,
+        status
+      ]
+    );
+
+    res.json({
+      msg: '预约申请已提交',
+      data: {
+        reservationId: result.insertId,
+        status,
+        assignedTeacherId
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ msg: `系统服务异常：${err.message}` });
   }
-
-  // 2. 日期校验（未来30天内）
-  const selectedDate = new Date(date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const maxDate = new Date(today);
-  maxDate.setDate(maxDate.getDate() + 30);
-  if (selectedDate < today || selectedDate > maxDate) {
-    return res.status(400).json({ msg: '请选择未来一月的有效日期' });
-  }
-
-  // 3. 人数校验
-  if (Number(attendeeCount) <= 0) {
-    return res.status(400).json({ msg: '参与人数请输入正整数' });
-  }
-
-  // 4. 时段校验
-  const slotList = Array.isArray(timeSlots) ? timeSlots : [timeSlots];
-  if (slotList.length === 0) {
-    return res.status(400).json({ msg: '请选择预约时段' });
-  }
-
-  // 5. 冲突检测（同教室、同日期、同一时段已存在记录）
-  const conflict = reservations.find(item =>
-    String(item.classroomId) === String(classroomId) &&
-    String(item.date) === String(date) &&
-    item.timeSlots.some(slot => slotList.includes(slot)) &&
-    ['pending', 'approved'].includes(item.status)
-  );
-  if (conflict) {
-    return res.status(409).json({ msg: '该时段已被占用' });
-  }
-
-  // 6. 状态规则：教师教学申请直接通过
-  const isTeaching = String(purposeType) === 'teaching';
-  const status = role === 'teacher' && isTeaching ? 'approved' : 'pending';
-
-  const record = {
-    id: reservationId++,
-    classroomId,
-    userId,
-    role: role || 'student',
-    date,
-    timeSlots: slotList,
-    attendeeCount: Number(attendeeCount),
-    activityName,
-    purpose,
-    purposeType: purposeType || 'nonTeaching',
-    status,
-    createdAt: new Date().toISOString()
-  };
-
-  reservations.push(record);
-
-  res.json({ msg: '预约申请已提交', data: record });
 };
 
 /**
  * 获取当前用户的预约记录
  * 需要鉴权，从 token 获取 user_id
  */
-const getMyReservations = (req, res) => {
-  const userId = req.user.user_id;
-  const list = reservations.filter(item => String(item.userId) === String(userId));
-  res.json({ data: list });
+const getMyReservations = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const [rows] = await pool.query(
+      'SELECT * FROM reservation WHERE applicant_id = ? ORDER BY reservation_id DESC',
+      [userId]
+    );
+    res.json({ data: rows });
+  } catch (err) {
+    res.status(500).json({ msg: '获取预约记录失败', error: err.message });
+  }
 };
 
 module.exports = {

@@ -414,9 +414,9 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
-import { useUserStore } from '../stores/userStore'
+import { useUserStore } from '../../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import request from '../utils/request'
+import request from '../../utils/request'
 import {
   Bell, ArrowDown, ArrowRight, Phone, Message, Location
   , HomeFilled, Calendar, List, Clock, User, Setting, SwitchButton, Checked, Reading

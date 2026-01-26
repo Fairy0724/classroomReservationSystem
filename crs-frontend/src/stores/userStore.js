@@ -6,6 +6,8 @@ const normalizeUser = (user) => {
   if (!user) return user
   return {
     ...user,
+    id: user.id ?? user.user_id ?? user.userId,
+    userId: user.userId ?? user.user_id ?? user.id,
     avatar: user.avatar ?? user.avatar_url,
     realName: user.realName ?? user.real_name,
     studentNo: user.studentNo ?? user.student_no,
@@ -30,7 +32,7 @@ export const useUserStore = defineStore('user', {
       // 角色
       this.role = res.user.role
       // 真实姓名
-      this.realName = this.userInfo?.realName 
+      this.realName = this.userInfo?.realName
       localStorage.setItem('token', res.token)
       return res
     },

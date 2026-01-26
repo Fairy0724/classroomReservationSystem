@@ -149,8 +149,8 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '../stores/userStore'
-import request from '../utils/request'
+import { useUserStore } from '../../stores/userStore'
+import request from '../../utils/request'
 import logoUrl from '@/assets/images/logo.png'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {

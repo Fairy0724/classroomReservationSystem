@@ -147,8 +147,8 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '../stores/userStore'
-import request from '../utils/request'
+import { useUserStore } from '../../stores/userStore'
+import request from '../../utils/request'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
