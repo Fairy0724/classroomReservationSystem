@@ -16,12 +16,10 @@ const AdminStudentList = () => import('@/views/admin/StudentList.vue')
 const AdminProfileView = () => import('@/views/admin/AdminProfileView.vue')
 const ClassroomView = () => import('@/views/user/ClassroomView.vue')
 const ClassroomDetailView = () => import('@/views/user/ClassroomDetailView.vue')
-const ReservationView = () => import('@/views/ReservationView.vue')
+const ReservationView = () => import('@/views/user/ReservationView.vue')
+const MyReservationsView = () => import('@/views/user/MyReservationsView.vue')
 const PlaceholderView = () => import('@/views/PlaceholderView.vue')
 const ProfileView = () => import('@/views/user/ProfileView.vue')
-// const AdminProfileView = () => import('@/views/admin/AdminProfileView.vue')
-// const UserListView = () => import('@/views/UserListView.vue')
-// const ClassroomListView = () => import('@/views/ClassroomListView.vue')
 
 const routes = [
   {
@@ -60,7 +58,7 @@ const routes = [
         // 我的预约（需要登录）
         path: 'my-reservations',
         name: 'myReservations',
-        component: PlaceholderView,
+        component: MyReservationsView,
         meta: { requiresAuth: true, title: '我的预约' }
       },
       {

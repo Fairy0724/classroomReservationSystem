@@ -45,7 +45,14 @@
           <option value="社团">社团</option>
           <option value="自习">自习</option>
           <option value="会议">会议</option>
+          <option value="考试">考试</option>
+          <!-- 其他：选择后在下方补充具体类型 -->
+          <option value="其他">其他</option>
         </select>
+      </div>
+      <div class="form-item">
+        <!-- HTML 标准不允许在 <option> 内放输入框，因此用独立输入框承载“其他”类型 -->
+        <input v-if="form.activityType === '其他'" type="text" v-model="form.otherActivityType" placeholder="请输入其他活动类型" />
       </div>
 
       <div class="form-item">
@@ -76,8 +83,8 @@
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '../stores/userStore'
-import request from '../utils/request'
+import { useUserStore } from '../../stores/userStore'
+import request from '../../utils/request'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
@@ -106,11 +113,14 @@ const form = ref({
   activityName: '',
   attendeeCount: 1,
   activityType: '教学',
+  otherActivityType: '',
   purpose: ''
 })
 
 // 可选时段（来自后端 class_period 表）
 const timeSlots = ref([])
+// 已占用节次（来自预约记录）
+const occupiedSlotIds = ref([])
 
 // ==================== 计算与校验 ====================
 
@@ -172,6 +182,23 @@ const fetchPeriods = async () => {
   }
 }
 
+// 获取已占用节次
+const fetchOccupiedPeriods = async () => {
+  if (!classroom.value.classroomId || !form.value.date) return
+  try {
+    const res = await request.get('/reservations/occupied', {
+      params: {
+        classroomId: classroom.value.classroomId,
+        date: form.value.date
+      }
+    })
+    const list = Array.isArray(res?.data) ? res.data : []
+    occupiedSlotIds.value = list.map(id => Number(id)).filter(id => !Number.isNaN(id))
+  } catch (error) {
+    occupiedSlotIds.value = []
+  }
+}
+
 // ==================== 时段可用性（开始前 2 小时内不可预约） ====================
 const getSlotById = (id) => timeSlots.value.find(slot => slot.id === id)
 
@@ -197,6 +224,7 @@ const getSlotStartTime = (slot, dateStr) => {
 // 校验单个时段是否已禁用
 const isSlotDisabled = (slot, dateStr = form.value.date) => {
   if (!slot || !dateStr) return false
+  if (occupiedSlotIds.value.includes(Number(slot.id))) return true
   const slotStart = getSlotStartTime(slot, dateStr)
   if (!slotStart) return false
 
@@ -265,6 +293,11 @@ const submitReservation = async () => {
     ElMessage.warning('请选择活动类型')
     return
   }
+  // 如果选择“其他”，必须填写具体类型
+  if (form.value.activityType === '其他' && !form.value.otherActivityType.trim()) {
+    ElMessage.warning('请填写其他活动类型')
+    return
+  }
   if (!form.value.purpose.trim()) {
     ElMessage.warning('请填写活动用途说明')
     return
@@ -279,6 +312,12 @@ const submitReservation = async () => {
 
   // 6. 提交预约
   try {
+    // 活动类型：如果选择“其他”，使用用户输入的具体类型
+    const resolvedActivityType =
+      form.value.activityType === '其他'
+        ? form.value.otherActivityType.trim()
+        : form.value.activityType
+
     const payload = {
       classroomId: classroom.value.classroomId,
       userId: userStore.userInfo?.id,
@@ -290,12 +329,19 @@ const submitReservation = async () => {
       timeSlots: form.value.timeSlots.map(id => timeSlots.value.find(t => t.id === id)?.label),
       attendeeCount: form.value.attendeeCount,
       activityName: form.value.activityName,
-      activityType: form.value.activityType,
+      activityType: resolvedActivityType,
       purpose: form.value.purpose
     }
-
+    // 向后端提交预约请求
     await request.post('/reservations', payload)
-    ElMessage.success('预约申请已提交')
+    // 成功反馈与跳转
+    // 如果是老师的教学预约，直接显示预约成功信息
+    if (userStore.userInfo?.role === '教师' && form.value.activityType === '教学') {
+      ElMessage.success('预约成功，教室已预留给您进行教学使用')
+    }
+    else {
+      ElMessage.success('预约申请已提交')
+    }
     router.push('/my-reservations')
   } catch (error) {
     // 后端返回的错误信息会被拦截器处理
@@ -325,6 +371,8 @@ watch([() => form.value.date, timeSlots], () => {
     return
   }
 
+  fetchOccupiedPeriods()
+
   if (!form.value.timeSlots.length) return
   form.value.timeSlots = form.value.timeSlots.filter(id => {
     const slot = getSlotById(id)
@@ -332,11 +380,16 @@ watch([() => form.value.date, timeSlots], () => {
   })
 })
 
+watch([() => classroom.value.classroomId, () => form.value.date], () => {
+  fetchOccupiedPeriods()
+})
+
 // ==================== 工具方法 ====================
 /**
  * 从已选节次中提取开始/结束时间
- * 例如："第1-2节 08:00-10:00" -> startTime=08:00, endTime=10:00
+ * 例如："第1节 08:00-10:00" -> startTime=08:00, endTime=10:00
  */
+// 获取已选时段的时间范围
 const getTimeRange = () => {
   const selectedSlots = form.value.timeSlots
     .map(id => timeSlots.value.find(t => String(t.id) === String(id)))
@@ -473,7 +526,7 @@ const getTimeRange = () => {
 }
 
 .tip {
-  color: #999;
+  color: #f56c6c;
   font-size: 12px;
 }
 </style>

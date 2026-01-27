@@ -164,6 +164,48 @@ const createReservation = async (req, res) => {
 };
 
 /**
+ * 获取指定教室与日期的已占用节次
+ * query: classroomId, date
+ */
+const getOccupiedPeriods = async (req, res) => {
+  try {
+    const { classroomId, date } = req.query || {};
+    if (!classroomId || !date) {
+      return res.status(400).json({ msg: '缺少必要参数' });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT period_ids FROM reservation
+       WHERE classroom_id = ? AND date = ?
+         AND status IN ('待审批','已通过')`,
+      [classroomId, date]
+    );
+
+    const occupied = rows
+      .map(row => {
+        const value = row.period_ids;
+        if (Array.isArray(value)) return value;
+        if (value && typeof value === 'object') return Array.from(value);
+        if (typeof value === 'string') {
+          try {
+            return JSON.parse(value);
+          } catch (err) {
+            return [];
+          }
+        }
+        return [];
+      })
+      .flat()
+      .map(id => Number(id))
+      .filter(id => !Number.isNaN(id));
+
+    res.json({ data: [...new Set(occupied)] });
+  } catch (err) {
+    res.status(500).json({ msg: `系统服务异常：${err.message}` });
+  }
+};
+
+/**
  * 获取当前用户的预约记录
  * 需要鉴权，从 token 获取 user_id
  */
@@ -180,7 +222,76 @@ const getMyReservations = async (req, res) => {
   }
 };
 
+/**
+ * 获取预约详情（只允许本人查看）
+ * params: id
+ */
+const getReservationDetail = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      'SELECT * FROM reservation WHERE reservation_id = ? LIMIT 1',
+      [id]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ msg: '预约记录不存在' });
+    }
+
+    const record = rows[0];
+    if (String(record.applicant_id) !== String(userId)) {
+      return res.status(403).json({ msg: '无权查看该预约' });
+    }
+
+    res.json({ data: record });
+  } catch (err) {
+    res.status(500).json({ msg: `系统服务异常：${err.message}` });
+  }
+};
+
+/**
+ * 取消预约（只允许本人操作）
+ * params: id
+ */
+const cancelReservation = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      'SELECT reservation_id, applicant_id, status FROM reservation WHERE reservation_id = ? LIMIT 1',
+      [id]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ msg: '预约记录不存在' });
+    }
+
+    const record = rows[0];
+    if (String(record.applicant_id) !== String(userId)) {
+      return res.status(403).json({ msg: '无权取消该预约' });
+    }
+
+    if (['已取消', '已驳回'].includes(record.status)) {
+      return res.status(400).json({ msg: '该预约已结束，无法取消' });
+    }
+
+    await pool.query(
+      'UPDATE reservation SET status = ?, rejected_at = NOW() WHERE reservation_id = ?'
+      ,
+      ['已取消', id]
+    );
+
+    res.json({ msg: '预约已取消' });
+  } catch (err) {
+    res.status(500).json({ msg: `系统服务异常：${err.message}` });
+  }
+};
+
 module.exports = {
   createReservation,
-  getMyReservations
+  getMyReservations,
+  getOccupiedPeriods,
+  getReservationDetail,
+  cancelReservation
 };

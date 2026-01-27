@@ -115,18 +115,20 @@
           <!-- 设备参数 -->
           <div v-if="currentTab === 'params'" class="params-content">
             <table>
-              <tr>
-                <td class="param-key">容量</td>
-                <td class="param-value">{{ classroom.capacity }} 人</td>
-              </tr>
-              <tr>
-                <td class="param-key">状态</td>
-                <td class="param-value">{{ statusText }}</td>
-              </tr>
-              <tr>
-                <td class="param-key">设备</td>
-                <td class="param-value">{{ classroom.equipment || '设备待完善' }}</td>
-              </tr>
+              <tbody>
+                <tr>
+                  <td class="param-key">容量</td>
+                  <td class="param-value">{{ classroom.capacity }} 人</td>
+                </tr>
+                <tr>
+                  <td class="param-key">状态</td>
+                  <td class="param-value">{{ statusText }}</td>
+                </tr>
+                <tr>
+                  <td class="param-key">设备</td>
+                  <td class="param-value">{{ classroom.equipment || '设备待完善' }}</td>
+                </tr>
+              </tbody>
             </table>
           </div>
         </div>
