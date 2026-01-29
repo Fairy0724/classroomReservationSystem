@@ -62,9 +62,9 @@
             <div class="meta">申请人：{{ item.applicant_name || '—' }}</div>
           </div>
           <div class="card-body">
-            <div class="row"><span class="label">日期</span><span class="value">{{ item.date }}</span></div>
+            <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(item.date) }}</span></div>
             <div class="row"><span class="label">时间</span><span class="value">{{ item.start_time }} - {{ item.end_time
-            }}</span></div>
+                }}</span></div>
             <div class="row"><span class="label">活动</span><span class="value">{{ item.activity_name }}</span></div>
             <div class="row"><span class="label">类型</span><span class="value">{{ item.activity_type }}</span></div>
             <div class="row"><span class="label">人数</span><span class="value">{{ item.participant_count }}</span></div>
@@ -95,6 +95,7 @@ import { useUserStore } from '@/stores/userStore'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
+import dayjs from 'dayjs'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -118,7 +119,11 @@ const filteredList = computed(() => {
     return matchKeyword && matchStatus
   })
 })
-
+// 格式化日期
+const formatDate = (dateStr) => {
+  return dayjs(dateStr).format('YYYY-MM-DD')
+}
+// 格式化教室名称
 const formatRoom = (item) => `${item.building || ''}${item.room_num || ''}` || `教室${item.classroom_id}`
 
 const statusClass = (status) => {
@@ -132,17 +137,21 @@ const resetFilters = () => {
   filters.value = { keyword: '', status: '' }
 }
 
+// 刷新数据
 const reload = async () => {
   loading.value = true
   error.value = ''
   try {
-    // 并行拉取统计与待审批列表
-    const [statsRes, pendingRes] = await Promise.all([
+    // 并行拉取统计、待审批与审批记录
+    const [statsRes, pendingRes, recordRes] = await Promise.all([
       request.get('/approvals/stats'),
-      request.get('/approvals/pending')
+      request.get('/approvals/pending'),
+      request.get('/approvals/records')
     ])
     stats.value = statsRes?.data || stats.value
-    list.value = Array.isArray(pendingRes?.data) ? pendingRes.data : []
+    const pendingList = Array.isArray(pendingRes?.data) ? pendingRes.data : []
+    const recordList = Array.isArray(recordRes?.data) ? recordRes.data : []
+    list.value = [...pendingList, ...recordList]
   } catch (err) {
     error.value = '获取审批数据失败'
   } finally {

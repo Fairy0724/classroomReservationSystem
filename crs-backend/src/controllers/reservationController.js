@@ -150,6 +150,27 @@ const createReservation = async (req, res) => {
       ]
     );
 
+    // 10. 写入审批记录（待审批/自动通过）
+    if (assignedTeacherId) {
+      const approvalResult = status === '已通过' ? '通过' : '待审批';
+      try {
+        await pool.query(
+          `INSERT INTO approval_record (reservation_id, applicant_id, teacher_id, result, reason, approval_time)
+           VALUES (?, ?, ?, ?, ?, NOW())`,
+          [result.insertId, userId, assignedTeacherId, approvalResult, null]
+        );
+      } catch (err) {
+        // 审批记录写入失败不影响预约主流程
+      }
+    }
+
+    if (status === '已通过') {
+      await pool.query(
+        `UPDATE reservation SET approved_at = NOW() WHERE reservation_id = ?`,
+        [result.insertId]
+      );
+    }
+
     res.json({
       msg: '预约申请已提交',
       data: {

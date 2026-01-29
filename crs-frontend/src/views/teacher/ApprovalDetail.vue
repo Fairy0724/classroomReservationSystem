@@ -14,7 +14,7 @@
         <div class="row"><span class="label">教室</span><span class="value">{{ roomName }}</span></div>
         <div class="row"><span class="label">申请人</span><span class="value">{{ detail.applicant_name || '—' }}</span>
         </div>
-        <div class="row"><span class="label">日期</span><span class="value">{{ detail.date }}</span></div>
+        <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(detail.date) }}</span></div>
         <div class="row"><span class="label">时间</span><span class="value">{{ detail.start_time }} - {{ detail.end_time
         }}</span></div>
         <div class="row"><span class="label">节次</span><span class="value">{{ formatPeriods(detail.period_ids) }}</span>
@@ -46,6 +46,7 @@ import { useRoute, useRouter } from 'vue-router'
 import NavBar from '@/components/NavBar.vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import dayjs from 'dayjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -54,6 +55,12 @@ const loading = ref(false)
 const error = ref('')
 const detail = ref(null)
 
+// 格式化日期
+const formatDate = (dateStr) => {
+  return dayjs(dateStr).format('YYYY-MM-DD')
+}
+
+// 教室名称
 const roomName = computed(() => {
   if (!detail.value) return ''
   return `${detail.value.building || ''}${detail.value.room_num || ''}` || `教室${detail.value.classroom_id}`
