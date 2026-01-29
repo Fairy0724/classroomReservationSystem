@@ -10,8 +10,6 @@ const normalizeUser = (user) => {
     userId: user.userId ?? user.user_id ?? user.id,
     avatar: user.avatar ?? user.avatar_url,
     realName: user.realName ?? user.real_name,
-    studentNo: user.studentNo ?? user.student_no,
-    jobNo: user.jobNo ?? user.job_no,
     createTime: user.createTime ?? user.create_time
   }
 }

@@ -5,21 +5,23 @@ import { useUserStore } from '@/stores/userStore'
 const userStore = useUserStore(pinia)
 
 // 懒加载页面
-const LoginView = () => import('@/views/LoginView.vue')
+const Login = () => import('@/views/Login.vue')
 const Layout = () => import('@/components/Layout.vue')
-const HomeView = () => import('@/views/user/HomeView.vue')
-const AdminView = () => import('@/views/admin/AdminView.vue')
+const Home = () => import('@/views/user/Home.vue')
+const Admin = () => import('@/views/admin/Admin.vue')
 const AdminClassroomList = () => import('@/views/admin/ClassroomList.vue')
 const AdminClassroomTypeList = () => import('@/views/admin/ClassroomTypeList.vue')
 const AdminTeacherList = () => import('@/views/admin/TeacherList.vue')
 const AdminStudentList = () => import('@/views/admin/StudentList.vue')
-const AdminProfileView = () => import('@/views/admin/AdminProfileView.vue')
-const ClassroomView = () => import('@/views/user/ClassroomView.vue')
-const ClassroomDetailView = () => import('@/views/user/ClassroomDetailView.vue')
-const ReservationView = () => import('@/views/user/ReservationView.vue')
-const MyReservationsView = () => import('@/views/user/MyReservationsView.vue')
-const PlaceholderView = () => import('@/views/PlaceholderView.vue')
-const ProfileView = () => import('@/views/user/ProfileView.vue')
+const AdminProfile = () => import('@/views/admin/AdminProfile.vue')
+const Classroom = () => import('@/views/user/Classroom.vue')
+const ClassroomDetail = () => import('@/views/user/ClassroomDetail.vue')
+const Reservation = () => import('@/views/user/Reservation.vue')
+const MyReservations = () => import('@/views/user/MyReservations.vue')
+const Approval = () => import('@/views/teacher/Approval.vue')
+const ApprovalDetail = () => import('@/views/teacher/ApprovalDetail.vue')
+const Placeholder = () => import('@/views/Placeholder.vue')
+const Profile = () => import('@/views/user/Profile.vue')
 
 const routes = [
   {
@@ -30,97 +32,104 @@ const routes = [
         // 首页路由，默认跳转到home
         path: '',
         name: 'home',
-        component: HomeView,
+        component: Home,
         meta: { keepAlive: false } // 首页不缓存，避免样式/模板更新被缓存
       },
       {
         // 教室列表页
         path: 'classrooms',
         name: 'classroomList',
-        component: ClassroomView,
+        component: Classroom,
         meta: { keepAlive: true }
       },
       {
         // 教室详情页
         path: 'classroom/:id',
         name: 'classroomDetail',
-        component: ClassroomDetailView,
+        component: ClassroomDetail,
         meta: { keepAlive: false }
       },
       {
         // 教室预约页（从详情页进入）
         path: 'classroom/:id/reserve',
         name: 'classroomReserve',
-        component: ReservationView,
+        component: Reservation,
         meta: { requiresAuth: true, title: '提交预约申请' }
       },
       {
         // 我的预约（需要登录）
         path: 'my-reservations',
         name: 'myReservations',
-        component: MyReservationsView,
+        component: MyReservations,
         meta: { requiresAuth: true, title: '我的预约' }
       },
       {
         // 教师审批（需要登录）
         path: 'approval',
         name: 'approval',
-        component: PlaceholderView,
+        component: Approval,
         meta: { requiresAuth: true, title: '审批管理' }
+      },
+      {
+        // 审批详情
+        path: 'approval/:id',
+        name: 'approvalDetail',
+        component: ApprovalDetail,
+        meta: { requiresAuth: true, title: '审批详情' }
       },
       {
         // 教师课程（需要登录）
         path: 'my-courses',
         name: 'myCourses',
-        component: PlaceholderView,
+        component: Placeholder,
         meta: { requiresAuth: true, title: '我的课程' }
       },
       {
         // 课程表（需要登录）
         path: 'schedule',
         name: 'schedule',
-        component: PlaceholderView,
+        component: Placeholder,
         meta: { requiresAuth: true, title: '课程表' }
       },
       {
         // 系统公告
         path: 'notice',
         name: 'notice',
-        component: PlaceholderView,
+        component: Placeholder,
         meta: { keepAlive: true, title: '系统公告' }
       },
       {
         // 使用帮助
         path: 'help',
         name: 'help',
-        component: PlaceholderView,
+        component: Placeholder,
         meta: { keepAlive: true, title: '使用帮助' }
       },
       {
         // 个人中心
         path: 'profile',
         name: 'profile',
-        component: ProfileView,
+        component: Profile,
         meta: { requiresAuth: true, title: '个人中心' }
       },
       {
         // 账号设置
         path: 'settings',
         name: 'settings',
-        component: PlaceholderView,
+        component: Placeholder,
         meta: { requiresAuth: true, title: '账号设置' }
       },
       {
         // 管理员后台首页
         path: 'admin',
         name: 'admin',
-        component: AdminView,
+        component: Admin,
         meta: { keepAlive: true, isAdmin: true, requiresAuth: true },// 管理员页需要缓存
         // 管理员子路由
         children: [
           {
             // 管理员：教室管理
-            path: '/classroom',
+            path: 'classroom',
             name: 'adminClassroom',
             component: AdminClassroomList,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
@@ -150,7 +159,7 @@ const routes = [
             // 管理员：个人信息
             path: '/profile',
             name: 'adminProfile',
-            component: AdminProfileView,
+            component: AdminProfile,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
           },
         ]
@@ -162,7 +171,7 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: LoginView,
+    component: Login,
     meta: { keepAlive: false } // 登录页不需要缓存
   }
 ]

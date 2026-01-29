@@ -4,32 +4,8 @@
          顶部导航栏（保持原样式结构，替换为教室系统文案）
          说明：不改样式，改内容，确保整体视觉风格一致
     ============================================================= -->
-    <nav class="nav-container">
-      <div class="nav-wrapper">
-        <div class="logo">
-          <img src="../assets/images/logo.png" alt="教室预约系统 Logo">
-        </div>
-        <div class="search-bar">
-          <input type="text" v-model="searchQuery" placeholder="搜索教室..." @keyup.enter="handleSearch">
-          <button class="search-btn" @click="handleSearch">
-            <i class="fa fa-search"></i>
-          </button>
-        </div>
-        <div class="nav-links">
-          <RouterLink to="/" class="nav-link">首页</RouterLink>
-          <RouterLink to="/classrooms" class="nav-link">教室列表</RouterLink>
-          <RouterLink to="/my-reservations" class="nav-link">我的预约</RouterLink>
-          <RouterLink to="/notice" class="nav-link">系统公告</RouterLink>
-          <template v-if="userStore.token">
-            <RouterLink v-if="isTeacher" to="/approval" class="nav-link">审批管理</RouterLink>
-            <a href="#" class="nav-link" @click.prevent="logout">退出登录</a>
-          </template>
-          <template v-else>
-            <RouterLink to="/login" class="nav-link">登录</RouterLink>
-          </template>
-        </div>
-      </div>
-    </nav>
+    <NavBar :keyword="searchQuery" :show-search="true" :show-classroom-link="true"
+      @update:keyword="searchQuery = $event" @search="handleSearch" />
 
     <div class="container">
       <div class="product-detail">
@@ -149,6 +125,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import NavBar from '@/components/NavBar.vue'
 import { useUserStore } from '../../stores/userStore'
 import request from '../../utils/request'
 import { ElMessage } from 'element-plus'
@@ -183,8 +160,6 @@ const tabs = [
   { key: 'params', label: '设备参数' }
 ]
 
-// 是否为教师角色
-const isTeacher = computed(() => userStore.userInfo?.role === 'teacher')
 
 // 教室状态文本
 const statusText = computed(() => {
@@ -301,12 +276,6 @@ const fetchClassroom = async () => {
   ].filter(Boolean)
 }
 
-// 退出登录
-const logout = () => {
-  userStore.logout()
-  router.push('/login')
-}
-
 // 初始化
 onMounted(() => {
   fetchClassroom()
@@ -380,7 +349,7 @@ onMounted(() => {
 }
 
 .product-name {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
   margin-bottom: 12px;
 }

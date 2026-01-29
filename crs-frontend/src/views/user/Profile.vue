@@ -1,32 +1,9 @@
 <!-- ProfileView.vue -->
 <template>
   <div>
-    <!-- 顶部导航：保留整体样式，替换为教室预约系统入口 -->
-    <nav class="nav-container">
-      <div class="nav-wrapper">
-        <div class="logo">
-          <img :src="logoUrl" alt="教室预约系统 Logo">
-        </div>
-        <div class="search-bar">
-          <input type="text" v-model="searchQuery" placeholder="搜索教室..." @keyup.enter="handleSearch">
-          <button class="search-btn" @click="handleSearch">
-            <i class="fa fa-search"></i>
-          </button>
-        </div>
-        <div class="nav-links">
-          <RouterLink to="/" class="nav-link">首页</RouterLink>
-          <RouterLink to="/classrooms" class="nav-link">教室列表</RouterLink>
-          <template v-if="isLogin">
-            <RouterLink to="/my-reservations" class="nav-link">我的预约</RouterLink>
-            <RouterLink to="/profile" class="nav-link">个人中心</RouterLink>
-            <a href="#" class="nav-link" @click.prevent="logout">退出登录</a>
-          </template>
-          <template v-else>
-            <RouterLink to="/login" class="nav-link">登录</RouterLink>
-          </template>
-        </div>
-      </div>
-    </nav>
+    <!-- 顶部导航 -->
+    <NavBar :keyword="searchQuery" :show-search="true" :show-classroom-link="true"
+      @update:keyword="searchQuery = $event" @search="handleSearch" />
 
     <div class="profile-page container">
       <!-- 左侧菜单：用户信息与功能菜单 -->
@@ -233,6 +210,7 @@
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import NavBar from '@/components/NavBar.vue';
 import { useUserStore } from '@/stores/userStore';
 import request from '@/utils/request';
 import { ElMessage } from 'element-plus';
@@ -477,12 +455,6 @@ const handleChangePhone = async () => {
 };
 
 
-
-// 退出登录
-const logout = () => {
-  userStore.logout();
-  router.push('/login');
-};
 
 // 头像加载失败兜底（防止外链防盗链/404）
 const handleAvatarError = (event) => {

@@ -1,5 +1,6 @@
 <template>
   <div class="reserve-page">
+    <NavBar :show-search="false" />
     <div class="header">
       <h1>提交预约申请</h1>
       <p>请填写活动信息，系统将进行合规性与冲突检测。</p>
@@ -86,6 +87,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '../../stores/userStore'
 import request from '../../utils/request'
 import { ElMessage } from 'element-plus'
+import NavBar from '@/components/NavBar.vue'
 
 const route = useRoute()
 const router = useRouter()

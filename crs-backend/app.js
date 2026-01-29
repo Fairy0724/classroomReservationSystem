@@ -21,6 +21,9 @@ app.use('/api/classroom-types', require('./src/routes/classroomType'));
 // 预约相关路由
 app.use('/api/reservations', require('./src/routes/reservation'));
 
+// 审批相关路由
+app.use('/api/approvals', require('./src/routes/approval'));
+
 // 节次相关路由
 app.use('/api/class-periods', require('./src/routes/period'));
 

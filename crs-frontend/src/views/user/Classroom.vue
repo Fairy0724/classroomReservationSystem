@@ -1,78 +1,7 @@
 <template>
   <div class="classroom-list-page">
-    <!-- ==================== 顶部导航（与首页一致） ==================== -->
-    <nav class="nav-container">
-      <div class="nav-wrapper">
-        <div class="logo">
-          <!-- <img src="../assets/images/logo.png" alt="教室预约系统 Logo"> -->
-          <span class="logo-text">教室预约系统</span>
-        </div>
-
-        <div class="search-bar">
-          <input type="text" v-model="keyword" placeholder="搜索教室名称、位置..." @keyup.enter="handleSearch">
-          <button class="search-btn" @click="handleSearch">搜索</button>
-        </div>
-
-        <div class="nav-links">
-          <RouterLink to="/" class="nav-link">
-            <el-icon>
-              <HomeFilled />
-            </el-icon> 首页
-          </RouterLink>
-          <RouterLink to="/my-reservations" class="nav-link">
-            <el-icon>
-              <Calendar />
-            </el-icon> 我的预约
-          </RouterLink>
-
-          <template v-if="userStore.token">
-            <RouterLink v-if="userStore.userInfo?.role === 'teacher'" to="/approval" class="nav-link">
-              <el-icon>
-                <Checked />
-              </el-icon> 审批管理
-            </RouterLink>
-            <el-dropdown trigger="click">
-              <div class="user-dropdown">
-                <el-icon>
-                  <User />
-                </el-icon>
-                <span class="user-name">{{ userStore.userInfo?.realName }}</span>
-                <el-icon>
-                  <ArrowDown />
-                </el-icon>
-              </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="router.push('/profile')">
-                    <el-icon>
-                      <User />
-                    </el-icon> 个人中心
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="router.push('/settings')">
-                    <el-icon>
-                      <Setting />
-                    </el-icon> 账号设置
-                  </el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">
-                    <el-icon>
-                      <SwitchButton />
-                    </el-icon> 退出登录
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </template>
-          <!-- 未登录时显示登录按钮 -->
-          <template v-else>
-            <RouterLink to="/login" class="nav-link login-btn">
-              <el-icon>
-                <User />
-              </el-icon> 登录
-            </RouterLink>
-          </template>
-        </div>
-      </div>
-    </nav>
+    <!-- 顶部导航（复用组件） -->
+    <NavBar v-model="keyword" :show-search="true" :show-classroom-link="false" @search="handleSearch" />
 
     <!-- ==================== 筛选区域 ==================== -->
     <div class="filter-panel">
@@ -149,17 +78,12 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '../../stores/userStore'
 import request from '../../utils/request'
 import logoUrl from '@/assets/images/logo.png'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  HomeFilled, Calendar, User, Setting, SwitchButton, Checked,
-  ArrowDown
-} from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import NavBar from '@/components/NavBar.vue'
 
 const router = useRouter()
-const userStore = useUserStore()
 
 // ==================== 搜索与筛选条件 ====================
 const keyword = ref('')
@@ -259,20 +183,6 @@ const goToDetail = (id) => {
   router.push(`/classroom/${id}`)
 }
 
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    userStore.logout()
-    router.push('/login')
-  } catch {
-    // 用户取消
-  }
-}
-
 onMounted(() => {
   fetchClassrooms()
 })
@@ -281,10 +191,6 @@ onMounted(() => {
 
 
 <style scoped>
-.logo-text {
-  font-size: 20px;
-  font-weight: 600;
-}
 .classroom-list-page {
   min-height: 100vh;
   background: #f0f4f8;

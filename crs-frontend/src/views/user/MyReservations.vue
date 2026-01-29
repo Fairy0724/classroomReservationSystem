@@ -1,76 +1,7 @@
 <template>
   <div class="my-reservations">
-    <!-- 顶部导航（与教室列表一致） -->
-    <nav class="nav-container">
-      <div class="nav-wrapper">
-        <div class="logo">
-          <span class="logo-text">教室预约系统</span>
-        </div>
-
-        <div class="nav-links">
-          <RouterLink to="/" class="nav-link">
-            <el-icon>
-              <HomeFilled />
-            </el-icon> 首页
-          </RouterLink>
-          <RouterLink to="/classrooms" class="nav-link">
-            <el-icon>
-              <OfficeBuilding />
-            </el-icon> 教室列表
-          </RouterLink>
-          <RouterLink to="/my-reservations" class="nav-link">
-            <el-icon>
-              <Calendar />
-            </el-icon> 我的预约
-          </RouterLink>
-
-          <template v-if="userStore.token">
-            <RouterLink v-if="userStore.userInfo?.role === 'teacher'" to="/approval" class="nav-link">
-              <el-icon>
-                <Checked />
-              </el-icon> 审批管理
-            </RouterLink>
-            <el-dropdown trigger="click">
-              <div class="user-dropdown">
-                <el-icon>
-                  <User />
-                </el-icon>
-                <span class="user-name">{{ userStore.userInfo?.realName }}</span>
-                <el-icon>
-                  <ArrowDown />
-                </el-icon>
-              </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="router.push('/profile')">
-                    <el-icon>
-                      <User />
-                    </el-icon> 个人中心
-                  </el-dropdown-item>
-                  <el-dropdown-item @click="router.push('/settings')">
-                    <el-icon>
-                      <Setting />
-                    </el-icon> 账号设置
-                  </el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">
-                    <el-icon>
-                      <SwitchButton />
-                    </el-icon> 退出登录
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </template>
-          <template v-else>
-            <RouterLink to="/login" class="nav-link login-btn">
-              <el-icon>
-                <User />
-              </el-icon> 登录
-            </RouterLink>
-          </template>
-        </div>
-      </div>
-    </nav>
+    <!-- 顶部导航 -->
+    <NavBar :show-search="false" />
 
     <!-- 内容区域 -->
     <div class="content">
@@ -222,11 +153,9 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import request from '@/utils/request'
+import NavBar from '@/components/NavBar.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
-import {
-  HomeFilled, Calendar, User, Setting, SwitchButton, Checked, ArrowDown, OfficeBuilding
-} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -382,19 +311,6 @@ const resetFilters = () => {
   page.value = 1
 }
 
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    userStore.logout()
-    router.push('/login')
-  } catch {
-    // 用户取消
-  }
-}
 
 onMounted(() => {
   fetchData()
@@ -424,53 +340,6 @@ watch(() => filters.value.startDate, (value) => {
   margin: 40px auto;
   /* 上下 左 右 内边距 */
   padding: 0 40px 40px;
-}
-
-.nav-container {
-  background: #fff;
-  border-bottom: 1px solid #eef2f7;
-}
-
-.nav-wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
-
-.logo-text {
-  font-size: 20px;
-  font-weight: 600;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.nav-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #4b5563;
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.login-btn {
-  color: #409eff;
-}
-
-.user-dropdown {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  color: #1f2937;
 }
 
 .header h1 {

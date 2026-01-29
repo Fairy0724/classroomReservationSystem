@@ -14,96 +14,8 @@
   <div class="home-container">
 
     <!-- ==================== 顶部导航栏 ==================== -->
-
-    <nav class="nav-container">
-      <div class="nav-wrapper">
-        <!-- Logo -->
-        <div class="logo">
-          <!-- <img src="../assets/images/logo.png" alt="教室预约系统 Logo"> -->
-          <span class="logo-text">教室预约系统</span>
-        </div>
-
-        <!-- 搜索框：可搜索教室名称、位置等 去除Elementplus样式-->
-        <div class="search-bar">
-          <input type="text" v-model="searchQuery" placeholder="搜索教室名称、位置..." @keyup.enter="handleSearch">
-          <button class="search-btn" @click="handleSearch">
-            <i class="fa fa-search"></i>
-          </button>
-        </div>
-
-        <!-- 导航链接 -->
-        <div class="nav-links">
-          <RouterLink to="/" class="nav-link">
-            <el-icon>
-              <HomeFilled />
-            </el-icon> 首页
-          </RouterLink>
-
-          <!-- 已登录状态 -->
-          <template v-if="userStore.token">
-            <!-- 我的预约 -->
-            <RouterLink to="/my-reservations" class="nav-link">
-              <el-icon>
-                <Calendar />
-              </el-icon> 我的预约
-            </RouterLink>
-
-            <!-- 【教师专属】审批管理入口 -->
-            <RouterLink v-if="isTeacher" to="/approval" class="nav-link teacher-only">
-              <el-icon>
-                <Checked />
-              </el-icon> 审批管理
-              <!-- 待审批数量角标 -->
-              <span v-if="pendingCount > 0" class="badge">{{ pendingCount }}</span>
-            </RouterLink>
-
-            <!-- 用户下拉菜单 -->
-            <el-dropdown trigger="click" @command="handleUserCommand">
-              <div class="user-dropdown">
-                <!-- 用户头像 -->
-                <el-avatar :size="32" class="user-avatar">
-                  <!-- 显示用户头像：首字母 -->
-                  {{ userStore.userInfo?.realName?.charAt(0) }}
-                </el-avatar>
-                <!-- 显示真实姓名 -->
-                <span class="user-name">{{ userStore.userInfo?.realName }}</span>
-                <el-icon>
-                  <ArrowDown />
-                </el-icon>
-              </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="profile">
-                    <el-icon>
-                      <User />
-                    </el-icon> 个人中心
-                  </el-dropdown-item>
-                  <el-dropdown-item command="settings">
-                    <el-icon>
-                      <Setting />
-                    </el-icon> 账号设置
-                  </el-dropdown-item>
-                  <el-dropdown-item divided command="logout">
-                    <el-icon>
-                      <SwitchButton />
-                    </el-icon> 退出登录
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </template>
-
-          <!-- 未登录状态 -->
-          <template v-else>
-            <RouterLink to="/login" class="nav-link login-btn">
-              <el-icon>
-                <User />
-              </el-icon> 登录
-            </RouterLink>
-          </template>
-        </div>
-      </div>
-    </nav>
+    <NavBar :keyword="searchQuery" :show-search="true" :show-classroom-link="true"
+      @update:keyword="searchQuery = $event" @search="handleSearch" />
     <!-- ==================== 轮播图区域 ==================== -->
     <div class="hero-section">
       <el-carousel height="400px" :interval="5000" indicator-position="outside">
@@ -414,12 +326,13 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
+import NavBar from '@/components/NavBar.vue'
 import { useUserStore } from '../../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '../../utils/request'
 import {
-  Bell, ArrowDown, ArrowRight, Phone, Message, Location
-  , HomeFilled, Calendar, List, Clock, User, Setting, SwitchButton, Checked, Reading
+  Bell, ArrowRight, Phone, Message, Location,
+  Calendar, List, Clock, User, Checked, Reading
 } from '@element-plus/icons-vue'
 
 // ==================== 路由和状态管理 ====================
@@ -499,43 +412,6 @@ const goToClassroomDetail = (id) => {
 /** 跳转到公告详情 */
 const goToNoticeDetail = (id) => {
   router.push({ path: `/notice/${id}` })
-}
-
-// ==================== 方法：用户操作 ====================
-
-/**
- * 用户下拉菜单命令处理
- */
-const handleUserCommand = (command) => {
-  switch (command) {
-    case 'profile':
-      router.push('/profile')
-      break
-    case 'settings':
-      router.push('/settings')
-      break
-    case 'logout':
-      handleLogout()
-      break
-  }
-}
-
-/**
- * 退出登录
- */
-const handleLogout = async () => {
-  try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    userStore.logout()
-    ElMessage.success('已退出登录')
-    router.push('/login')
-  } catch {
-    // 用户取消
-  }
 }
 
 /**
@@ -908,74 +784,7 @@ onMounted(async () => {
   vertical-align: middle;
 }
 
-/* ==================== 导航栏样式 ==================== */
-.nav-container {
-  background-color: #fff;
-  box-shadow: var(--box-shadow);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.nav-wrapper {
-  max-width: 1400px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 20px;
-}
-
-/* Logo 区域 */
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* .logo img {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-} */
-
-.logo-text {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-
-/* 导航链接 */
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--text-regular);
-  font-size: 14px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  transition: all 0.3s;
-  text-decoration: none;
-}
-
-.nav-link:hover {
-  color: var(--primary-color);
-  background-color: rgba(64, 158, 255, 0.1);
-}
-
-/* 教师专属链接标识 */
-.nav-link.teacher-only {
-  position: relative;
-}
-
-.nav-link .badge,
+/* ==================== 角标样式 ==================== */
 .action-badge {
   position: absolute;
   top: -5px;
@@ -989,42 +798,6 @@ onMounted(async () => {
   text-align: center;
   border-radius: 8px;
   padding: 0 4px;
-}
-
-/* 登录按钮样式 */
-.login-btn {
-  background-color: var(--primary-color);
-  color: #fff !important;
-}
-
-.login-btn:hover {
-  background-color: var(--primary-dark);
-}
-
-/* 用户下拉菜单 */
-.user-dropdown {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: background-color 0.3s;
-}
-
-.user-dropdown:hover {
-  background-color: var(--bg-light);
-}
-
-.user-avatar {
-  background: linear-gradient(135deg, var(--primary-color), var(--success-color));
-  color: #fff;
-  font-weight: 600;
-}
-
-.user-name {
-  font-size: 14px;
-  color: var(--text-primary);
 }
 
 /* ==================== 轮播图样式 ==================== */
@@ -1604,16 +1377,6 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .nav-wrapper {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .search-bar {
-    order: 3;
-    width: 100%;
-  }
-
   .classroom-grid {
     grid-template-columns: 1fr;
   }
