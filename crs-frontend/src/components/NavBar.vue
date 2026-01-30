@@ -6,15 +6,15 @@
       </div>
 
       <div v-if="showSearch" class="search-bar">
-        <input type="text" :value="keyword" :placeholder="searchPlaceholder"
-          @input="$emit('update:keyword', $event.target.value)" @keyup.enter="$emit('search')" />
-        <button class="search-btn" @click="$emit('search')">搜索</button>
+        <input type="text" :value="searchValue" :placeholder="searchPlaceholder" @input="handleInput"
+          @keyup.enter="handleSearch" />
+        <button class="search-btn" @click="handleSearch">搜索</button>
       </div>
 
       <div class="nav-links">
         <!-- 登录未失效 -->
         <div class="nav-links">
-          <RouterLink to="/" class="nav-link">
+          <RouterLink v-if="showHomeLink" to="/" class="nav-link">
             <el-icon>
               <HomeFilled />
             </el-icon> 首页
@@ -27,14 +27,15 @@
               </el-icon> 教室列表
             </RouterLink>
 
-            <RouterLink to="/my-reservations" class="nav-link">
+            <RouterLink v-if="showMyReservationsLink" to="/my-reservations" class="nav-link">
               <el-icon>
                 <Calendar />
               </el-icon> 我的预约
             </RouterLink>
 
             <!-- 仅教师角色显示审批管理 -->
-            <RouterLink v-if="userStore.userInfo?.role === 'teacher'" to="/approval" class="nav-link">
+            <RouterLink v-if="showApprovalLink && userStore.userInfo?.role === 'teacher'" to="/approval"
+              class="nav-link">
               <el-icon>
                 <Checked />
               </el-icon> 审批管理
@@ -90,16 +91,33 @@ import {
   HomeFilled, Calendar, User, Setting, SwitchButton, Checked, ArrowDown, OfficeBuilding
 } from '@element-plus/icons-vue'
 
-defineProps({
+const props = defineProps({
+  modelValue: {
+    type: String,
+    default: ''
+  },
   keyword: {
     type: String,
     default: ''
   },
+  showHomeLink: {
+    type: Boolean,
+    default: true
+  },
   showSearch: {
     type: Boolean,
-    default: false
+    default: true
   },
   showClassroomLink: {
+    type: Boolean,
+    default: true
+  },
+  showMyReservationsLink: {
+    type: Boolean,
+    default: true
+  },
+  // 是否显示审批管理链接(仅教师角色可见)
+  showApprovalLink: {
     type: Boolean,
     default: true
   },
@@ -109,7 +127,7 @@ defineProps({
   }
 })
 
-defineEmits(['update:keyword', 'search'])
+const emit = defineEmits(['update:modelValue', 'update:keyword', 'search'])
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -119,6 +137,10 @@ const isLoggedIn = computed(() => !!userStore.token && !!userStore.userInfo)
 const displayName = computed(() => {
   const info = userStore.userInfo
   return info?.realName || info?.real_name || info?.username || info?.userName || '用户'
+})
+
+const searchValue = computed(() => {
+  return props.modelValue || props.keyword || ''
 })
 
 onMounted(async () => {
@@ -144,6 +166,25 @@ const handleLogout = async () => {
   } catch {
     // 用户取消
   }
+}
+
+const handleSearch = () => {
+  const value = String(searchValue.value || '').trim()
+  if (!value) return
+  router.push({ path: '/classrooms', query: { keyword: value } })
+  // 兼容已有页面的监听
+  try {
+    // @ts-ignore
+    emit('search')
+  } catch {
+    // ignore
+  }
+}
+
+const handleInput = (event) => {
+  const value = event?.target?.value ?? ''
+  emit('update:modelValue', value)
+  emit('update:keyword', value)
 }
 </script>
 

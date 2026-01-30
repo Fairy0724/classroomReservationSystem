@@ -1,6 +1,6 @@
 <template>
   <div class="approval-detail">
-    <NavBar :show-search="false" />
+    <NavBar v-model="keyword" :show-search="true" :show-approval-link="false" @search="handleSearch" />
 
     <div class="content">
       <div class="header">
@@ -50,6 +50,8 @@ import dayjs from 'dayjs'
 
 const route = useRoute()
 const router = useRouter()
+// 搜索关键词
+const keyword = ref('')
 
 const loading = ref(false)
 const error = ref('')
@@ -60,6 +62,10 @@ const formatDate = (dateStr) => {
   return dayjs(dateStr).format('YYYY-MM-DD')
 }
 
+// 搜索
+const handleSearch = () => {
+  // 跳转到nav统一处理
+}
 // 教室名称
 const roomName = computed(() => {
   if (!detail.value) return ''

@@ -1,7 +1,7 @@
 <template>
   <div class="approval-page">
     <!-- 顶部导航 -->
-    <NavBar :show-search="false" />
+    <NavBar v-model="keyword" :show-search="true" :show-approval-link="false" @search="handleSearch" />
     <div class="content">
       <div class="header">
         <h1>审批管理</h1>
@@ -64,7 +64,7 @@
           <div class="card-body">
             <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(item.date) }}</span></div>
             <div class="row"><span class="label">时间</span><span class="value">{{ item.start_time }} - {{ item.end_time
-                }}</span></div>
+            }}</span></div>
             <div class="row"><span class="label">活动</span><span class="value">{{ item.activity_name }}</span></div>
             <div class="row"><span class="label">类型</span><span class="value">{{ item.activity_type }}</span></div>
             <div class="row"><span class="label">人数</span><span class="value">{{ item.participant_count }}</span></div>
@@ -104,6 +104,7 @@ const loading = ref(false)
 const error = ref('')
 const stats = ref({ pending: 0, approved: 0, rejected: 0, total: 0 })
 const list = ref([])
+const keyword = ref('')
 
 const filters = ref({
   keyword: '',
@@ -135,6 +136,10 @@ const statusClass = (status) => {
 
 const resetFilters = () => {
   filters.value = { keyword: '', status: '' }
+}
+
+const handleSearch = () => {
+  // 搜索跳转由 NavBar 统一处理
 }
 
 // 刷新数据

@@ -1,7 +1,8 @@
 <template>
   <div class="my-reservations">
     <!-- 顶部导航 -->
-    <NavBar :show-search="false" />
+    <!-- <NavBar :show-search="false" /> -->
+    <NavBar v-model="keyword" :show-search="true" :show-my-reservations-link="false" @search="handleSearch" />
 
     <!-- 内容区域 -->
     <div class="content">
@@ -116,12 +117,12 @@
         <div v-else-if="detailError" class="state error">{{ detailError }}</div>
         <div v-else-if="detail" class="detail-body">
           <div class="row"><span class="label">教室</span><span class="value">{{ getClassroomName(detail.classroom_id)
-              }}</span></div>
+          }}</span></div>
           <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(detail.date) }}</span></div>
           <div class="row"><span class="label">时间</span><span class="value">{{ detail.start_time }} - {{ detail.end_time
-              }}</span></div>
+          }}</span></div>
           <div class="row"><span class="label">节次</span><span class="value">{{ formatPeriods(detail.period_ids)
-              }}</span>
+          }}</span>
           </div>
           <div class="row"><span class="label">活动名称</span><span class="value">{{ detail.activity_name }}</span></div>
           <div class="row"><span class="label">活动类型</span><span class="value">{{ detail.activity_type }}</span></div>
@@ -130,7 +131,7 @@
           <div class="row"><span class="label">用途说明</span><span class="value">{{ detail.purpose || '—' }}</span></div>
           <div class="row"><span class="label">状态</span><span class="value">{{ detail.status }}</span></div>
           <div class="row"><span class="label">提交时间</span><span class="value">{{ formatDateTime(detail.submitted_at)
-              }}</span></div>
+          }}</span></div>
         </div>
         <div class="detail-actions">
           <button class="btn" @click="detailVisible = false">关闭</button>
@@ -164,6 +165,7 @@ const reservations = ref([])
 const classrooms = ref([])
 const loading = ref(false)
 const error = ref('')
+const keyword = ref('')
 
 // 日期格式化工具
 const formatDate = (dateStr) => {
@@ -309,6 +311,10 @@ const getStatusClass = (status) => {
 const resetFilters = () => {
   filters.value = { keyword: '', status: '', startDate: '', endDate: '' }
   page.value = 1
+}
+
+const handleSearch = () => {
+  // 搜索跳转由 NavBar 统一处理
 }
 
 

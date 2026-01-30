@@ -1,5 +1,5 @@
 <template>
-  <div class="product-detail-page">
+  <div class="classroom-detail-page">
     <!-- ============================================================
          顶部导航栏（保持原样式结构，替换为教室系统文案）
          说明：不改样式，改内容，确保整体视觉风格一致
@@ -8,12 +8,12 @@
       @update:keyword="searchQuery = $event" @search="handleSearch" />
 
     <div class="container">
-      <div class="product-detail">
+      <div class="classroom-detail">
         <!-- ============================================================
              教室图片展示区（沿用商品图片布局）
              说明：主图 + 缩略图，便于展示教室多角度照片
         ============================================================= -->
-        <div class="product-gallery">
+        <div class="classroom-gallery">
           <div class="main-image">
             <img :src="classroom.mainImage" :alt="roomName" />
           </div>
@@ -27,22 +27,22 @@
              教室信息区（替换商品信息为教室字段）
              说明：保留原样式模块，字段改为教室信息
         ============================================================= -->
-        <div class="product-info">
-          <h1 class="product-name">{{ roomName }}</h1>
-          <div class="product-brief">{{ classroom.type }} · {{ classroom.equipment || '设备待完善' }}</div>
+        <div class="classroom-info">
+          <h1 class="classroom-name">{{ roomName }}</h1>
+          <div class="classroom-brief">{{ classroom.type }} · {{ classroom.equipment || '设备待完善' }}</div>
 
           <!-- 教室基础信息（使用原 price-section 排版） -->
-          <div class="price-section">
-            <div class="current-price">可容纳 {{ classroom.capacity }} 人</div>
-            <div class="original-price">{{ locationText }}</div>
-            <div class="discount-tag" :class="classroom.status">
+          <div class="classroom-meta">
+            <div class="capacity">可容纳 {{ classroom.capacity }} 人</div>
+            <div class="location">{{ locationText }}</div>
+            <div class="status-tag" :class="classroom.status">
               {{ statusText }}
             </div>
           </div>
 
           <!-- 操作按钮（仅展示入口，表单在预约页） -->
-          <div class="actions">
-            <button class="btn-buy-now" @click="goToReserve">一键预约</button>
+          <div class="action-bar">
+            <button class="btn-reserve" @click="goToReserve">去预约</button>
             <button class="btn-favorite" @click="toggleFavorite">
               <i :class="isFavorite ? 'icon-heart-filled' : 'icon-heart'"></i>
               收藏教室
@@ -50,16 +50,16 @@
           </div>
 
           <!-- 使用须知（替换服务承诺） -->
-          <div class="service-promises">
-            <div class="promise-item">
+          <div class="use-guidelines">
+            <div class="guideline-item">
               <i class="icon-genuine"></i>
               <span>提前预约</span>
             </div>
-            <div class="promise-item">
+            <div class="guideline-item">
               <i class="icon-shipping"></i>
               <span>准时使用</span>
             </div>
-            <div class="promise-item">
+            <div class="guideline-item">
               <i class="icon-return"></i>
               <span>保持整洁</span>
             </div>
@@ -70,7 +70,7 @@
       <!-- ============================================================
            教室详情 tabs（保留结构，替换内容）
       ============================================================= -->
-      <div class="product-tabs">
+      <div class="classroom-tabs">
         <div class="tab-headers">
           <div v-for="tab in tabs" :key="tab.key" :class="['tab-header', { active: currentTab === tab.key }]"
             @click="currentTab = tab.key">
@@ -284,7 +284,7 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.product-detail-page {
+.classroom-detail-page {
   min-height: 100vh;
   background-color: #f5f5f5;
 }
@@ -295,14 +295,14 @@ onMounted(() => {
   padding: 40px 20px;
 }
 
-.product-detail {
+.classroom-detail {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 40px;
   margin-bottom: 60px;
 }
 
-.product-gallery {
+.classroom-gallery {
   background: #fff;
   padding: 20px;
   border-radius: 12px;
@@ -341,43 +341,42 @@ onMounted(() => {
   border-color: #2ecc71;
 }
 
-.product-info {
+.classroom-info {
   background: #fff;
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.product-name {
+.classroom-name {
   font-size: 28px;
   font-weight: 600;
   margin-bottom: 12px;
 }
 
-.product-brief {
+.classroom-brief {
   color: #666;
   margin-bottom: 20px;
 }
 
-.price-section {
+.classroom-meta {
   display: flex;
   align-items: baseline;
   gap: 12px;
   margin-bottom: 30px;
 }
 
-.current-price {
+.capacity {
   font-size: 28px;
   color: #2ecc71;
   font-weight: bold;
 }
 
-.original-price {
-  color: #999;
-  text-decoration: line-through;
+.location {
+  color: #6b7280;
 }
 
-.discount-tag {
+.status-tag {
   background: #2ecc71;
   color: white;
   padding: 2px 8px;
@@ -385,71 +384,13 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.specs,
-.quantity {
-  margin-bottom: 30px;
-}
-
-.spec-title {
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 12px;
-}
-
-.spec-options {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.spec-options button {
-  padding: 8px 20px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background: #fff;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.spec-options button.active {
-  border-color: #2ecc71;
-  color: #2ecc71;
-}
-
-.quantity-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.quantity-selector button {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #ddd;
-  background: #fff;
-  cursor: pointer;
-}
-
-.quantity-selector input {
-  width: 60px;
-  height: 36px;
-  text-align: center;
-  border: 1px solid #ddd;
-}
-
-.stock {
-  color: #666;
-  margin-left: 12px;
-}
-
-.actions {
+.action-bar {
   display: flex;
   gap: 20px;
   margin-bottom: 30px;
 }
 
-.btn-add-cart,
-.btn-buy-now,
+.btn-reserve,
 .btn-favorite {
   padding: 12px 30px;
   border: none;
@@ -458,13 +399,7 @@ onMounted(() => {
   transition: opacity 0.3s;
 }
 
-.btn-add-cart {
-  background: #fff;
-  border: 1px solid #2ecc71;
-  color: #2ecc71;
-}
-
-.btn-buy-now {
+.btn-reserve {
   background: #2ecc71;
   color: #fff;
   flex: 2;
@@ -475,21 +410,21 @@ onMounted(() => {
   color: #666;
 }
 
-.service-promises {
+.use-guidelines {
   display: flex;
   justify-content: space-around;
   padding: 20px 0;
   border-top: 1px solid #eee;
 }
 
-.promise-item {
+.guideline-item {
   display: flex;
   align-items: center;
   gap: 8px;
   color: #666;
 }
 
-.product-tabs {
+.classroom-tabs {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -531,53 +466,6 @@ onMounted(() => {
   width: 200px;
 }
 
-.reviews-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.review-item {
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.user-info img {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-}
-
-.rating {
-  color: #ffd700;
-}
-
-.review-images {
-  display: flex;
-  gap: 8px;
-  margin: 12px 0;
-}
-
-.review-images img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.review-time {
-  color: #999;
-  font-size: 14px;
-}
-
 /* ==================== 教室详情新增样式 ==================== */
 .date-input {
   height: 36px;
@@ -588,15 +476,15 @@ onMounted(() => {
 }
 
 /* 教室状态标签颜色 */
-.discount-tag.available {
+.status-tag.available {
   background: #2ecc71;
 }
 
-.discount-tag.occupied {
+.status-tag.occupied {
   background: #f39c12;
 }
 
-.discount-tag.maintenance {
+.status-tag.maintenance {
   background: #909399;
 }
 </style>

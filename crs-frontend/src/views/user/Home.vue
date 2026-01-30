@@ -14,7 +14,7 @@
   <div class="home-container">
 
     <!-- ==================== 顶部导航栏 ==================== -->
-    <NavBar :keyword="searchQuery" :show-search="true" :show-classroom-link="true"
+    <NavBar v-model="searchQuery"  :show-home-link="false" 
       @update:keyword="searchQuery = $event" @search="handleSearch" />
     <!-- ==================== 轮播图区域 ==================== -->
     <div class="hero-section">

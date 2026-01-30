@@ -1,7 +1,8 @@
 <template>
   <div class="classroom-list-page">
     <!-- 顶部导航（复用组件） -->
-    <NavBar v-model="keyword" :show-search="true" :show-classroom-link="false" @search="handleSearch" />
+    <NavBar :keyword="keyword" :show-search="true" :show-classroom-link="false" @update:keyword="keyword = $event"
+      @search="handleSearch" />
 
     <!-- ==================== 筛选区域 ==================== -->
     <div class="filter-panel">
@@ -76,14 +77,15 @@
  * - 支持多条件筛选（类型/设备/教学楼）
  * - 条件可选：未选中时默认展示全部教室
  */
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import request from '../../utils/request'
 import logoUrl from '@/assets/images/logo.png'
 import { ElMessage } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
 
 const router = useRouter()
+const route = useRoute()
 
 // ==================== 搜索与筛选条件 ====================
 const keyword = ref('')
@@ -185,6 +187,15 @@ const goToDetail = (id) => {
 
 onMounted(() => {
   fetchClassrooms()
+  if (route.query.keyword) {
+    keyword.value = String(route.query.keyword)
+  }
+})
+
+watch(() => route.query.keyword, (value) => {
+  if (value !== undefined) {
+    keyword.value = String(value || '')
+  }
 })
 </script>
 
