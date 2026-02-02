@@ -29,15 +29,32 @@
         ============================================================= -->
         <div class="classroom-info">
           <h1 class="classroom-name">{{ roomName }}</h1>
-          <div class="classroom-brief">{{ classroom.type }} · {{ classroom.equipment || '设备待完善' }}</div>
+          <!-- 教室类型和设备信息 -->
+          <div class="classroom-brief">
+            <div class="type">
+              教室类型：<span>{{ classroom.type }}</span>
+            </div>
+            <div class="equipment">
+              教室设备：<span>{{ classroom.equipment || '设备待完善' }}</span>
+            </div>
+          </div>
 
           <!-- 教室基础信息（使用原 price-section 排版） -->
           <div class="classroom-meta">
-            <div class="capacity">可容纳 {{ classroom.capacity }} 人</div>
-            <div class="location">{{ locationText }}</div>
-            <div class="status-tag" :class="classroom.status">
-              {{ statusText }}
+            <div class="status-tag" :class="statusClass">
+              教室状态：<span>{{ statusText }}</span>
             </div>
+            <div class="capacity">
+              容纳人数：<span>{{ classroom.capacity }}</span> 人
+            </div>
+            <div class="location">
+              教室位置：<span>{{ locationText }}</span>
+            </div>
+            <!-- 所属学院 -->
+            <div class="department">
+              所属学院：<span>{{ classroom.deptName }}</span>
+            </div>
+            
           </div>
 
           <!-- 操作按钮（仅展示入口，表单在预约页） -->
@@ -53,15 +70,15 @@
           <div class="use-guidelines">
             <div class="guideline-item">
               <i class="icon-genuine"></i>
-              <span>提前预约</span>
+              <span>提前2小时预约</span>
             </div>
             <div class="guideline-item">
               <i class="icon-shipping"></i>
-              <span>准时使用</span>
+              <span>准时使用不违约</span>
             </div>
             <div class="guideline-item">
               <i class="icon-return"></i>
-              <span>保持整洁</span>
+              <span>使用后保持整洁</span>
             </div>
           </div>
         </div>
@@ -173,6 +190,21 @@ const statusText = computed(() => {
   return map[classroom.value.status] || classroom.value.status || '可预约'
 })
 
+// 新增：匹配CSS样式的英文类名（核心！解决样式不匹配）
+const statusClass = computed(() => {
+  const map = {
+    // 后端可能返回的中文/英文状态 → 统一映射为CSS的英文类名
+    '可用': 'available',
+    '可预约': 'available',
+    'available': 'available',
+    '使用中': 'occupied',
+    'occupied': 'occupied',
+    '维护中': 'maintenance',
+    'maintenance': 'maintenance'
+  }
+  return map[classroom.value.status] || 'available' // 无值默认显示可预约样式
+})
+
 // 教室名称：楼号 + 教室编号
 const roomName = computed(() => {
   const building = classroom.value.building || ''
@@ -182,7 +214,7 @@ const roomName = computed(() => {
 
 // 位置信息
 const locationText = computed(() => {
-  return `${classroom.value.building}-${classroom.value.floor}层`
+  return `${classroom.value.building}-${classroom.value.floor}层-${classroom.value.roomNum}`
 })
 
 // ==================== 页面交互方法 ====================
@@ -343,6 +375,7 @@ onMounted(() => {
 
 .classroom-info {
   background: #fff;
+  /* 内边距 */
   padding: 30px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -354,34 +387,54 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
+/* 教室类型和设备信息 */
 .classroom-brief {
   color: #666;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
 }
 
 .classroom-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+  /* display: flex;  */
+  gap: 16px;
   margin-bottom: 30px;
+  color: #666;
 }
 
-.capacity {
+/* .capacity {
   font-size: 28px;
   color: #2ecc71;
   font-weight: bold;
-}
+} */
 
 .location {
-  color: #6b7280;
+  color: #666;
 }
 
-.status-tag {
-  background: #2ecc71;
-  color: white;
+/* 教室状态标签 */
+.status-tag span {
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 14px;
+}
+
+/* .status-tag.available span {
+  background: #e6ffed;
+  color: #2ecc71;
+} */
+/* 教室状态标签颜色 */
+.status-tag.available span {
+  background: #e6ffed;
+  color: #2ecc71;
+}
+
+.status-tag.occupied span {
+  background: #fff4e5;
+  color: #f39c12;
+}
+
+.status-tag.maintenance span {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .action-bar {
@@ -473,18 +526,5 @@ onMounted(() => {
   border: 1px solid #ddd;
   border-radius: 6px;
   outline: none;
-}
-
-/* 教室状态标签颜色 */
-.status-tag.available {
-  background: #2ecc71;
-}
-
-.status-tag.occupied {
-  background: #f39c12;
-}
-
-.status-tag.maintenance {
-  background: #909399;
 }
 </style>
