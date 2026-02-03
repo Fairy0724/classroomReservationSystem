@@ -8,76 +8,99 @@
         <p>处理学生预约申请并查看审批记录。</p>
       </div>
 
-      <!-- 统计卡片 -->
-      <div class="stats">
-        <div class="stat-card">
-          <div class="stat-label">待审批</div>
-          <div class="stat-value">{{ stats.pending }}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">已通过</div>
-          <div class="stat-value">{{ stats.approved }}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">已驳回</div>
-          <div class="stat-value">{{ stats.rejected }}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">总计</div>
-          <div class="stat-value">{{ stats.total }}</div>
-        </div>
+      <!-- 视图切换：审批管理 / 审批历史（ECharts） -->
+      <div class="view-switch">
+        <button class="switch-btn" :class="{ active: viewMode === 'manage' }" @click="viewMode = 'manage'">
+          审批管理
+        </button>
+        <button class="switch-btn" :class="{ active: viewMode === 'history' }" @click="viewMode = 'history'">
+          审批历史数据
+        </button>
       </div>
 
-      <!-- 筛选区 -->
-      <div class="filter-panel">
-        <div class="filter-item">
-          <label>关键字</label>
-          <input v-model="filters.keyword" type="text" placeholder="活动名称/教室" />
+      <!-- 审批管理视图：统计 + 列表 -->
+      <template v-if="viewMode === 'manage'">
+        <!-- 统计卡片 -->
+        <div class="stats">
+          <div class="stat-card">
+            <div class="stat-label">待审批</div>
+            <div class="stat-value">{{ stats.pending }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">已通过</div>
+            <div class="stat-value">{{ stats.approved }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">已驳回</div>
+            <div class="stat-value">{{ stats.rejected }}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">总计</div>
+            <div class="stat-value">{{ stats.total }}</div>
+          </div>
         </div>
-        <div class="filter-item">
-          <label>状态</label>
-          <select v-model="filters.status">
-            <option value="">全部</option>
-            <option value="待审批">待审批</option>
-            <option value="已通过">已通过</option>
-            <option value="已驳回">已驳回</option>
-          </select>
+
+        <!-- 筛选区 -->
+        <div class="filter-panel">
+          <div class="filter-item">
+            <label>关键字</label>
+            <input v-model="filters.keyword" type="text" placeholder="活动名称/教室" />
+          </div>
+          <div class="filter-item">
+            <label>状态</label>
+            <select v-model="filters.status">
+              <option value="">全部</option>
+              <option value="待审批">待审批</option>
+              <option value="已通过">已通过</option>
+              <option value="已驳回">已驳回</option>
+            </select>
+          </div>
+          <button class="reset-btn" @click="resetFilters">清空筛选</button>
+          <button class="btn" @click="reload">刷新</button>
         </div>
-        <button class="reset-btn" @click="resetFilters">清空筛选</button>
-        <button class="btn" @click="reload">刷新</button>
-      </div>
 
-      <!-- 列表 -->
-      <div v-if="loading" class="state">加载中...</div>
-      <div v-else-if="error" class="state error">{{ error }}</div>
-      <div v-else-if="!filteredList.length" class="state">暂无数据</div>
+        <!-- 列表 -->
+        <div v-if="loading" class="state">加载中...</div>
+        <div v-else-if="error" class="state error">{{ error }}</div>
+        <div v-else-if="!filteredList.length" class="state">暂无数据</div>
 
-      <div v-else class="list">
-        <div v-for="item in filteredList" :key="item.reservation_id" class="card">
-          <div class="card-header">
-            <div class="title">
-              <span class="room">{{ formatRoom(item) }}</span>
-              <span class="status" :class="statusClass(item.status)">{{ item.status }}</span>
+        <div v-else class="list">
+          <div v-for="item in filteredList" :key="item.reservation_id" class="card">
+            <div class="card-header">
+              <div class="title">
+                <span class="room">{{ formatRoom(item) }}</span>
+                <span class="status" :class="statusClass(item.status)">{{ item.status }}</span>
+              </div>
+              <div class="meta">申请人：{{ item.applicant_name || '—' }}</div>
             </div>
-            <div class="meta">申请人：{{ item.applicant_name || '—' }}</div>
-          </div>
-          <div class="card-body">
-            <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(item.date) }}</span></div>
-            <div class="row"><span class="label">时间</span><span class="value">{{ item.start_time }} - {{ item.end_time
-            }}</span></div>
-            <div class="row"><span class="label">活动</span><span class="value">{{ item.activity_name }}</span></div>
-            <div class="row"><span class="label">类型</span><span class="value">{{ item.activity_type }}</span></div>
-            <div class="row"><span class="label">人数</span><span class="value">{{ item.participant_count }}</span></div>
-          </div>
+            <div class="card-body">
+              <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(item.date) }}</span></div>
+              <div class="row"><span class="label">时间</span><span class="value">{{ item.start_time }} - {{ item.end_time
+                  }}</span></div>
+              <div class="row"><span class="label">活动</span><span class="value">{{ item.activity_name }}</span></div>
+              <div class="row"><span class="label">类型</span><span class="value">{{ item.activity_type }}</span></div>
+              <div class="row"><span class="label">人数</span><span class="value">{{ item.participant_count }}</span>
+              </div>
+            </div>
 
-          <div class="card-actions">
-            <button class="btn-outline" @click="goDetail(item.reservation_id)">查看详情</button>
-            <button class="btn" :disabled="item.status !== '待审批'" @click="approve(item.reservation_id)">通过</button>
-            <button class="btn-danger" :disabled="item.status !== '待审批'"
-              @click="reject(item.reservation_id)">驳回</button>
+            <div class="card-actions">
+              <button class="btn-outline" @click="goDetail(item.reservation_id)">查看详情</button>
+              <button class="btn" :disabled="item.status !== '待审批'" @click="approve(item.reservation_id)">通过</button>
+              <button class="btn-danger" :disabled="item.status !== '待审批'"
+                @click="reject(item.reservation_id)">驳回</button>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
+
+      <!-- 审批历史视图：ECharts 数据可视化 -->
+      <template v-else>
+        <!-- ECharts 容器：使用 vue-echarts 组件 -->
+        <div class="chart-wrapper">
+          <!-- ECharts 图表独立组件，便于维护 -->
+          <ApprovalHistoryChart :records="list" :room-formatter="formatRoom" />
+        </div>
+      </template>
     </div>
   </div>
 </template>
@@ -96,6 +119,7 @@ import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
 import dayjs from 'dayjs'
+import ApprovalHistoryChart from '@/components/ApprovalHistoryChart.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -105,6 +129,8 @@ const error = ref('')
 const stats = ref({ pending: 0, approved: 0, rejected: 0, total: 0 })
 const list = ref([])
 const keyword = ref('')
+// 视图模式：manage=审批管理，history=审批历史
+const viewMode = ref('manage')
 
 const filters = ref({
   keyword: '',
@@ -120,6 +146,7 @@ const filteredList = computed(() => {
     return matchKeyword && matchStatus
   })
 })
+
 // 格式化日期
 const formatDate = (dateStr) => {
   return dayjs(dateStr).format('YYYY-MM-DD')
@@ -205,6 +232,8 @@ onMounted(() => {
 <style scoped>
 .approval-page {
   min-height: 100vh;
+  /* 自适应页面高度（随内容变化） */
+  height: auto;
   background: #f0f4f8;
 }
 
@@ -212,10 +241,35 @@ onMounted(() => {
   max-width: 1100px;
   margin: 32px auto;
   padding: 0 20px 40px;
+  height: auto;
+  /* 显式设置为 auto，确保不限制高度 */
+  overflow: visible;
 }
 
 .header h1 {
   margin: 0 0 8px;
+}
+
+/* 视图切换按钮 */
+.view-switch {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+.switch-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.switch-btn.active {
+  background: #ecf5ff;
+  border-color: #409eff;
+  color: #409eff;
 }
 
 .stats {
@@ -253,6 +307,80 @@ onMounted(() => {
   padding: 16px 20px;
   margin-bottom: 20px;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+
+.history-legend {
+  display: flex;
+  gap: 8px;
+}
+
+.history-legend .legend-item {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.history-legend .legend-item.approved {
+  background: #e1f3d8;
+  color: #67c23a;
+}
+
+.history-legend .legend-item.rejected {
+  background: #fde2e2;
+  color: #f56c6c;
+}
+
+.history-chart {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(80px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.history-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.history-bar {
+  height: 120px;
+  width: 60px;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.history-bar .bar {
+  width: 100%;
+}
+
+.history-bar .bar.approved {
+  background: #67c23a;
+}
+
+.history-bar .bar.rejected {
+  background: #f56c6c;
+}
+
+.history-date {
+  font-size: 12px;
+  color: #667085;
 }
 
 .filter-item {

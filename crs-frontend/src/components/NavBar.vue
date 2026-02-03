@@ -12,71 +12,67 @@
       </div>
 
       <div class="nav-links">
-        <!-- 登录未失效 -->
-        <div class="nav-links">
-          <RouterLink v-if="showHomeLink" to="/" class="nav-link">
+        <RouterLink v-if="showHomeLink" to="/" class="nav-link">
+          <el-icon>
+            <HomeFilled />
+          </el-icon> 首页
+        </RouterLink>
+
+        <template v-if="isLoggedIn">
+          <RouterLink v-if="showClassroomLink" to="/classrooms" class="nav-link">
             <el-icon>
-              <HomeFilled />
-            </el-icon> 首页
+              <OfficeBuilding />
+            </el-icon> 教室列表
           </RouterLink>
 
-          <template v-if="isLoggedIn">
-            <RouterLink v-if="showClassroomLink" to="/classrooms" class="nav-link">
-              <el-icon>
-                <OfficeBuilding />
-              </el-icon> 教室列表
-            </RouterLink>
+          <RouterLink v-if="showMyReservationsLink" to="/my-reservations" class="nav-link">
+            <el-icon>
+              <Calendar />
+            </el-icon> 我的预约
+          </RouterLink>
 
-            <RouterLink v-if="showMyReservationsLink" to="/my-reservations" class="nav-link">
-              <el-icon>
-                <Calendar />
-              </el-icon> 我的预约
-            </RouterLink>
+          <!-- 仅教师角色显示审批管理 -->
+          <RouterLink v-if="showApprovalLink && userStore.userInfo?.role === 'teacher'" to="/approval" class="nav-link">
+            <el-icon>
+              <Checked />
+            </el-icon> 审批管理
+          </RouterLink>
 
-            <!-- 仅教师角色显示审批管理 -->
-            <RouterLink v-if="showApprovalLink && userStore.userInfo?.role === 'teacher'" to="/approval"
-              class="nav-link">
-              <el-icon>
-                <Checked />
-              </el-icon> 审批管理
-            </RouterLink>
-
-            <!-- 用户信息下拉菜单 -->
-            <el-dropdown trigger="click">
-              <div class="user-dropdown">
-                <el-icon>
-                  <User />
-                </el-icon>
-                <span class="user-name">{{ displayName }}</span>
-                <el-icon>
-                  <ArrowDown />
-                </el-icon>
-              </div>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="router.push('/profile')">
-                    <el-icon>
-                      <User />
-                    </el-icon> 个人中心
-                  </el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">
-                    <el-icon>
-                      <SwitchButton />
-                    </el-icon> 退出登录
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </template>
-
-          <template v-else>
-            <RouterLink to="/login" class="nav-link login-btn">
+          <!-- 用户信息下拉菜单 -->
+          <el-dropdown trigger="click">
+            <div class="user-dropdown">
               <el-icon>
                 <User />
-              </el-icon> 登录
-            </RouterLink>
-          </template>
-        </div>
+              </el-icon>
+              <span class="user-name">{{ displayName }}</span>
+              <el-icon>
+                <ArrowDown />
+              </el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="router.push('/profile')">
+                  <el-icon>
+                    <User />
+                  </el-icon> 个人中心
+                </el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">
+                  <el-icon>
+                    <SwitchButton />
+                  </el-icon> 退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
+
+        <template v-else>
+          <RouterLink to="/login" class="nav-link login-btn">
+            <el-icon>
+              <User />
+            </el-icon> 登录
+          </RouterLink>
+        </template>
       </div>
     </div>
   </nav>

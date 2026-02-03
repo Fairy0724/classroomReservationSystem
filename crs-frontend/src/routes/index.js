@@ -136,28 +136,28 @@ const routes = [
           },
           {
             // 管理员：教室类型管理
-            path: '/classroom-type',
+            path: 'classroom-type',
             name: 'adminClassroomType',
             component: AdminClassroomTypeList,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
           },
           {
             // 管理员：教师信息
-            path: '/teachers',
+            path: 'teachers',
             name: 'adminTeachers',
             component: AdminTeacherList,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
           },
           {
             // 管理员：学生信息
-            path: '/students',
+            path: 'students',
             name: 'adminStudents',
             component: AdminStudentList,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
           },
           {
             // 管理员：个人信息
-            path: '/profile',
+            path: 'profile',
             name: 'adminProfile',
             component: AdminProfile,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
@@ -182,7 +182,21 @@ const router = createRouter({
 })
 
 // 路由拦截逻辑与之前一致
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  // 若已有 token 但 role 为空，先拉取用户信息以判断角色
+  if (localStorage.getItem('token') && !userStore.role) {
+    try {
+      await userStore.fetchProfile();
+    } catch {
+      // 忽略异常，交由后续鉴权处理
+    }
+  }
+
+  // 管理员账号：只允许进入 /admin 下页面（以及登录页）
+  if (userStore.role === 'admin' && !to.path.startsWith('/admin') && to.path !== '/login') {
+    next('/admin');
+    return;
+  }
   // 检查当前路由是否需要登录权限
   if (to.meta.requiresAuth) {
     // 检查是否有 token

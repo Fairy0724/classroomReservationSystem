@@ -1,34 +1,34 @@
 <template>
-  <AdminLayout breadcrumb="管理员个人信息">
+  <div class="page-container">
     <div class="page-card">
-      <!-- 基本信息表单 -->
-      <el-form :model="form" label-width="90px" class="profile-form">
-        <el-form-item label="账号">
-          <el-input v-model="form.username" disabled />
-        </el-form-item>
-        <el-form-item label="角色">
-          <el-tag type="success">管理员</el-tag>
-        </el-form-item>
-        <el-form-item label="姓名">
-          <el-input v-model="form.realName" placeholder="请输入姓名" />
-        </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="form.phone" placeholder="请输入手机号" />
-        </el-form-item>
-        <el-form-item label="邮箱">
-          <el-input v-model="form.email" placeholder="请输入邮箱" />
-        </el-form-item>
-        <!-- <el-form-item label="院系编码">
+    <!-- 基本信息表单 -->
+    <el-form :model="form" label-width="90px" class="profile-form">
+      <el-form-item label="账号">
+        <el-input v-model="form.username" disabled />
+      </el-form-item>
+      <el-form-item label="角色">
+        <el-tag type="success">管理员</el-tag>
+      </el-form-item>
+      <el-form-item label="姓名">
+        <el-input v-model="form.realName" placeholder="请输入姓名" />
+      </el-form-item>
+      <el-form-item label="手机号">
+        <el-input v-model="form.phone" placeholder="请输入手机号" />
+      </el-form-item>
+      <el-form-item label="邮箱">
+        <el-input v-model="form.email" placeholder="请输入邮箱" />
+      </el-form-item>
+      <!-- <el-form-item label="院系编码">
           <el-input v-model="form.department" placeholder="如：CS" />
         </el-form-item>
         <el-form-item label="头像URL">
           <el-input v-model="form.avatar" placeholder="可选" />
         </el-form-item> -->
-        <el-form-item>
-          <el-button type="primary" @click="handleSave">保存信息</el-button>
-          <el-button @click="openPwdDialog">修改密码</el-button>
-        </el-form-item>
-      </el-form>
+      <el-form-item>
+        <el-button type="primary" @click="handleSave">保存信息</el-button>
+        <el-button @click="openPwdDialog">修改密码</el-button>
+      </el-form-item>
+    </el-form>
     </div>
 
     <!-- 修改密码弹窗 -->
@@ -46,7 +46,7 @@
         <el-button type="primary" @click="handleChangePassword">确认</el-button>
       </template>
     </el-dialog>
-  </AdminLayout>
+  </div>
 </template>
 
 <script setup>
@@ -56,7 +56,6 @@
  */
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import AdminLayout from '@/components/AdminLayout.vue'
 import request from '@/utils/request'
 
 // ==================== 基本信息 ====================

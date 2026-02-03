@@ -1,5 +1,52 @@
 // 预约控制器（数据库版）
 const { pool } = require('../db/db');
+const { semesterStartDate, scheduleTable } = require('../config/config');
+
+// ==================== 课表占用辅助方法 ====================
+const normalizeDateOnly = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+// 将日期转换为学期周次（从 1 开始）
+const getSemesterWeek = (dateStr) => {
+  if (!semesterStartDate) return null;
+  const start = normalizeDateOnly(semesterStartDate);
+  const current = normalizeDateOnly(dateStr);
+  if (!start || !current) return null;
+  const diff = current.getTime() - start.getTime();
+  if (diff < 0) return null;
+  return Math.floor(diff / 86400000 / 7) + 1;
+};
+
+// 将日期转换为星期数（1-7，周一=1，周日=7）
+const getWeekday = (dateStr) => {
+  const d = normalizeDateOnly(dateStr);
+  if (!d) return null;
+  const day = d.getDay();
+  return day === 0 ? 7 : day;
+};
+
+// 获取某教室在指定日期的课程占用节次
+const getScheduleOccupiedPeriods = async (classroomId, dateStr) => {
+  const weekNo = getSemesterWeek(dateStr);
+  const weekday = getWeekday(dateStr);
+  if (!weekNo || !weekday) return [];
+
+  const table = scheduleTable || 'schedule';
+  const [rows] = await pool.query(
+    `SELECT period_id FROM ${table}
+     WHERE classroom_id = ? AND weekday = ?
+       AND start_week <= ? AND end_week >= ?`,
+    [classroomId, weekday, weekNo, weekNo]
+  );
+
+  return rows
+    .map(row => Number(row.period_id))
+    .filter(id => !Number.isNaN(id));
+};
 
 /**
  * 提交预约申请
@@ -127,6 +174,16 @@ const createReservation = async (req, res) => {
         ? timeSlots
         : [];
 
+    // 8.1 课程表冲突校验（同教室、同日期、同节次）
+    if (normalizedPeriodIds.length) {
+      const scheduleOccupied = await getScheduleOccupiedPeriods(classroomId, date);
+      const scheduleSet = new Set(scheduleOccupied.map(id => Number(id)));
+      const hasConflict = normalizedPeriodIds.some(id => scheduleSet.has(Number(id)));
+      if (hasConflict) {
+        return res.status(409).json({ msg: '该时段已被课程占用' });
+      }
+    }
+
     // 9. 写入预约记录（时间字段交给数据库默认值）
     const [result] = await pool.query(
       `INSERT INTO reservation
@@ -220,7 +277,11 @@ const getOccupiedPeriods = async (req, res) => {
       .map(id => Number(id))
       .filter(id => !Number.isNaN(id));
 
-    res.json({ data: [...new Set(occupied)] });
+    // 合并课程表占用
+    const scheduleOccupied = await getScheduleOccupiedPeriods(classroomId, date);
+    const merged = [...new Set([...occupied, ...scheduleOccupied])];
+
+    res.json({ data: merged });
   } catch (err) {
     res.status(500).json({ msg: `系统服务异常：${err.message}` });
   }

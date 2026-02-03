@@ -1,45 +1,38 @@
 <template>
-  <AdminLayout breadcrumb="教室类型">
-    <div class="page-card">
-      <!-- 工具栏：查询 + 操作 -->
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <el-input v-model="query.keyword" placeholder="类型名称 / 描述" clearable @keyup.enter="handleSearch"
-            style="width: 240px" />
-          <el-button type="primary" @click="handleSearch">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
+  <div class="page-container">
+    <div class="content-wrapper">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>教室类型管理</h2>
+          <div class="actions">
+            <el-input v-model="query.keyword" placeholder="类型名称 / 描述" clearable class="search-input"
+              @keyup.enter="handleSearch" />
+            <el-button type="primary" @click="handleSearch">查询</el-button>
+            <el-button @click="handleReset">重置</el-button>
+            <el-button type="primary" @click="openCreate">新增类型</el-button>
+            <el-button @click="fetchList">刷新</el-button>
+          </div>
         </div>
-        <div class="toolbar-right">
-          <el-button type="primary" @click="openCreate">新增类型</el-button>
-          <el-button @click="fetchList">刷新</el-button>
+
+        <!-- 类型列表表格 -->
+        <el-table :data="tableData" v-loading="loading" border stripe class="table">
+          <el-table-column type="index" label="序号" width="60" />
+          <el-table-column prop="typeName" label="类型名称" min-width="160" />
+          <el-table-column prop="description" label="描述" min-width="260" />
+          <el-table-column label="操作" width="200" fixed="right">
+            <template #default="scope">
+              <el-button class="action-btn edit-btn" link @click="openEdit(scope.row)">编辑</el-button>
+              <el-button class="action-btn delete-btn" link @click="handleDelete(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 分页器 -->
+        <div class="pager">
+          <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
+            :page-size="pageSize" :current-page="page" @size-change="handleSizeChange"
+            @current-change="handlePageChange" />
         </div>
-      </div>
-
-      <!-- 类型列表表格 -->
-      <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%">
-        <el-table-column type="index" label="#" width="60" />
-        <el-table-column prop="typeName" label="类型名称" min-width="160" />
-        <el-table-column prop="description" label="描述" min-width="220" />
-        <el-table-column label="状态" width="120">
-          <template #default="scope">
-            <el-tag :type="scope.row.status === 'enabled' ? 'success' : 'info'">
-              {{ scope.row.status === 'enabled' ? '启用' : '停用' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" min-width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
-          <template #default="scope">
-            <el-button type="primary" link @click="openEdit(scope.row)">编辑</el-button>
-            <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 分页器 -->
-      <div class="pager">
-        <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total" :page-size="pageSize"
-          :current-page="page" @size-change="handleSizeChange" @current-change="handlePageChange" />
       </div>
     </div>
 
@@ -52,19 +45,13 @@
         <el-form-item label="描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="3" placeholder="可选" />
         </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-select v-model="form.status" style="width: 200px">
-            <el-option label="启用" value="enabled" />
-            <el-option label="停用" value="disabled" />
-          </el-select>
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit">保存</el-button>
       </template>
     </el-dialog>
-  </AdminLayout>
+  </div>
 </template>
 
 <script setup>
@@ -74,7 +61,6 @@
  */
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import AdminLayout from '@/components/AdminLayout.vue'
 import request from '@/utils/request'
 
 // ==================== 查询条件 ====================
@@ -97,8 +83,7 @@ const formRef = ref(null)
 const form = reactive({
   id: '',
   typeName: '',
-  description: '',
-  status: 'enabled'
+  description: ''
 })
 
 // 表单校验规则
@@ -158,8 +143,7 @@ const openCreate = () => {
   Object.assign(form, {
     id: '',
     typeName: '',
-    description: '',
-    status: 'enabled'
+    description: ''
   })
 }
 
@@ -171,8 +155,7 @@ const openEdit = (row) => {
   Object.assign(form, {
     id: row.id,
     typeName: row.typeName,
-    description: row.description,
-    status: row.status
+    description: row.description
   })
 }
 
@@ -184,15 +167,13 @@ const handleSubmit = () => {
     if (isEdit.value) {
       await request.put(`/classroom-types/${form.id}`, {
         typeName: form.typeName,
-        description: form.description,
-        status: form.status
+        description: form.description
       })
       ElMessage.success('更新成功')
     } else {
       await request.post('/classroom-types', {
         typeName: form.typeName,
-        description: form.description,
-        status: form.status
+        description: form.description
       })
       ElMessage.success('新增成功')
     }
@@ -215,32 +196,68 @@ const handleDelete = (row) => {
 </script>
 
 <style scoped>
-.page-card {
+.content-wrapper {
   background: #fff;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
-.toolbar {
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.panel-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.actions {
+  display: flex;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.toolbar-left,
-.toolbar-right {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.search-input {
+  width: 220px;
+}
+
+.table {
+  width: 100%;
 }
 
 .pager {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+
+.action-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.edit-btn {
+  color: #1677ff;
+  background: rgba(22, 119, 255, 0.12);
+}
+
+.edit-btn:hover {
+  background: rgba(22, 119, 255, 0.2);
+}
+
+.delete-btn {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.12);
+}
+
+.delete-btn:hover {
+  background: rgba(255, 77, 79, 0.2);
 }
 </style>

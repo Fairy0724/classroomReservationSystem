@@ -1,6 +1,7 @@
 <template>
-  <AdminLayout breadcrumb="系统首页">
-    <div class="content-wrapper">
+  <AdminLayout :breadcrumb="breadcrumbText">
+    <!-- 管理员首页（仅 /admin 显示） -->
+    <div v-if="isAdminHome" class="content-wrapper">
       <!-- ========== 左侧图表区域 ========== -->
       <div class="charts-section">
         <!-- 第一行：饼图 + 柱状图 -->
@@ -85,6 +86,9 @@
         </div>
       </div>
     </div>
+
+    <!-- 管理员子页面（/admin/*） -->
+    <router-view v-else />
   </AdminLayout>
 </template>
 
@@ -98,7 +102,8 @@
  * 3. 统计卡片展示关键数据
  * 4. ECharts图表可视化
  */
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import AdminLayout from '@/components/AdminLayout.vue'
 import * as echarts from 'echarts'
 import {
@@ -123,6 +128,22 @@ const lineChartRef = ref(null)
 let pieChart = null
 let barChart = null
 let lineChart = null
+
+const route = useRoute()
+const isAdminHome = computed(() => route.path === '/admin')
+const breadcrumbText = computed(() => {
+  const map = {
+    '/admin': '系统首页',
+    '/admin/classroom': '教室管理',
+    '/admin/classroom-type': '教室类型',
+    '/admin/teachers': '教师信息',
+    '/admin/students': '学生信息',
+    '/admin/profile': '个人信息',
+    '/admin/feedback': '反馈信息',
+    '/admin/notice': '系统公告'
+  }
+  return map[route.path] || '系统首页'
+})
 
 /**
  * 初始化饼状图 - 教室类型分布

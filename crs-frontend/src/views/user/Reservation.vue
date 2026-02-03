@@ -1,75 +1,81 @@
 <template>
   <div class="reserve-page">
-    <NavBar :show-search="false" />
-    <div class="header">
-      <h1>提交预约申请</h1>
-      <p>请填写活动信息，系统将进行合规性与冲突检测。</p>
-    </div>
-
-    <!-- 教室基本信息展示（确保用户知道当前选择的教室） -->
-    <div class="classroom-info">
-      <h2>{{ classroom.building }}{{ classroom.roomNum }}</h2>
-      <div class="meta">
-        <span>位置：{{ classroom.building }}-{{ classroom.floor }}层</span>
-        <span>容量：{{ classroom.capacity }} 人</span>
-      </div>
-    </div>
-
-    <!-- 预约表单 -->
-    <div class="form">
-      <div class="form-item">
-        <label>预约日期</label>
-        <input type="date" v-model="form.date" />
-        <small v-if="!isDateValid" class="error">请选择未来一月的有效日期</small>
+    <!-- 导航栏 -->
+    <NavBar :show-search="true" />
+    <!-- 内容 -->
+    <div class="container">
+      <div class="header">
+        <h1>提交预约申请</h1>
+        <p>请填写活动信息，系统将进行合规性与冲突检测。</p>
       </div>
 
-      <div class="form-item">
-        <label>预约时段（支持连续节次）</label>
-        <div class="slot-list">
-          <label v-for="slot in timeSlots" :key="slot.id" class="slot" :class="{ disabled: isSlotDisabled(slot) }">
-            <input type="checkbox" :value="slot.id" v-model="form.timeSlots" :disabled="isSlotDisabled(slot)" />
-            {{ slot.label }}
-          </label>
+      <!-- 教室基本信息展示（确保用户知道当前选择的教室） -->
+      <div class="classroom-info">
+        <h2>{{ classroom.building }}{{ classroom.roomNum }}</h2>
+        <div class="meta">
+          <span>位置：{{ classroom.building }}-{{ classroom.floor }}层</span>
+          <span>容量：{{ classroom.capacity }} 人</span>
         </div>
-        <small v-if="form.timeSlots.length && !isTimeSlotContinuous" class="error">预约时段需连续节次</small>
       </div>
 
-      <div class="form-item">
-        <label>活动名称</label>
-        <input type="text" v-model="form.activityName" placeholder="例如：高数补课/社团活动" />
-      </div>
+      <!-- 预约表单 -->
+      <div class="form">
+        <div class="form-item">
+          <label>预约日期</label>
+          <input type="date" v-model="form.date" />
+          <small v-if="!isDateValid" class="error">请选择未来一月的有效日期</small>
+        </div>
 
-      <div class="form-item">
-        <label>活动类型</label>
-        <select v-model="form.activityType">
-          <option value="教学">教学</option>
-          <option value="社团">社团</option>
-          <option value="自习">自习</option>
-          <option value="会议">会议</option>
-          <option value="考试">考试</option>
-          <!-- 其他：选择后在下方补充具体类型 -->
-          <option value="其他">其他</option>
-        </select>
-      </div>
-      <div class="form-item">
-        <!-- HTML 标准不允许在 <option> 内放输入框，因此用独立输入框承载“其他”类型 -->
-        <input v-if="form.activityType === '其他'" type="text" v-model="form.otherActivityType" placeholder="请输入其他活动类型" />
-      </div>
+        <div class="form-item">
+          <label>预约时段（支持连续节次）</label>
+          <div class="slot-list">
+            <label v-for="slot in timeSlots" :key="slot.id" class="slot" :class="{ disabled: isSlotDisabled(slot) }">
+              <input type="checkbox" :value="slot.id" v-model="form.timeSlots" :disabled="isSlotDisabled(slot)" />
+              {{ slot.label }}
+            </label>
+          </div>
+          <small v-if="form.timeSlots.length && !isTimeSlotContinuous" class="error">预约时段需连续节次</small>
+        </div>
 
-      <div class="form-item">
-        <label>参与人数</label>
-        <input type="number" v-model="form.attendeeCount" min="1" :max="classroom.capacity" />
-        <small class="tip">不得超过教室容量</small>
-      </div>
+        <div class="form-item">
+          <label>活动名称</label>
+          <input type="text" v-model="form.activityName" placeholder="例如：高数补课/社团活动" />
+        </div>
 
-      <div class="form-item">
-        <label>活动用途说明</label>
-        <textarea v-model="form.purpose" rows="3" placeholder="例如：课程教学 / 社团活动 / 考试等"></textarea>
-      </div>
+        <div class="form-item">
+          <label>活动类型</label>
+          <select v-model="form.activityType">
+            <option value="教学">教学</option>
+            <option value="社团">社团</option>
+            <option value="自习">自习</option>
+            <option value="会议">会议</option>
+            <option value="考试">考试</option>
+            <!-- 其他：选择后在下方补充具体类型 -->
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="form-item">
+          <!-- HTML 标准不允许在 <option> 内放输入框，因此用独立输入框承载“其他”类型 -->
+          <input v-if="form.activityType === '其他'" type="text" v-model="form.otherActivityType"
+            placeholder="请输入其他活动类型" />
+        </div>
 
-      <div class="actions">
-        <button class="btn-primary" @click="submitReservation">提交预约</button>
-        <button class="btn-secondary" @click="router.back()">返回</button>
+        <div class="form-item">
+          <label>参与人数</label>
+          <input type="number" v-model="form.attendeeCount" min="1" :max="classroom.capacity" />
+          <!-- 超过教室容量的时候再提示 -->
+          <small v-if="form.attendeeCount > classroom.capacity" class="tip">不得超过教室容量</small>
+        </div>
+
+        <div class="form-item">
+          <label>活动用途说明</label>
+          <textarea v-model="form.purpose" rows="3" placeholder="例如：课程教学 / 社团活动 / 考试等"></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="btn-primary" @click="submitReservation">提交预约</button>
+          <button class="btn-secondary" @click="router.back()">返回</button>
+        </div>
       </div>
     </div>
   </div>
@@ -410,8 +416,13 @@ const getTimeRange = () => {
 
 <style scoped>
 .reserve-page {
+  min-height: 100vh;
+  background: #f0f4f8;
+}
+
+.container {
   max-width: 900px;
-  margin: 40px auto;
+  margin: 0 auto;
   padding: 0 20px 40px;
 }
 

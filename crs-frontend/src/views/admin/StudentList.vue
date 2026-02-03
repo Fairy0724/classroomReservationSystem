@@ -1,5 +1,5 @@
 <template>
-  <AdminLayout breadcrumb="学生信息">
+  <div class="page-container">
     <div class="page-card">
       <!-- 顶部工具栏：查询 + 操作按钮 -->
       <div class="toolbar">
@@ -17,7 +17,7 @@
 
       <!-- 学生列表表格 -->
       <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%">
-        <el-table-column type="index" label="#" width="60" />
+        <el-table-column type="index" label="序号" width="60" />
         <el-table-column prop="username" label="账号" min-width="120" />
         <el-table-column prop="realName" label="姓名" min-width="120" />
         <el-table-column prop="studentNo" label="学号" min-width="140" />
@@ -28,12 +28,11 @@
             {{ scope.row.departmentName || scope.row.departmentCode || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" min-width="170" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="230" fixed="right">
           <template #default="scope">
-            <el-button type="primary" link @click="openEdit(scope.row)">编辑</el-button>
-            <el-button type="warning" link @click="handleResetPassword(scope.row)">重置密码</el-button>
-            <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
+            <el-button class="action-btn edit-btn" link @click="openEdit(scope.row)">编辑</el-button>
+            <el-button class="action-btn reset-btn" link @click="handleResetPassword(scope.row)">重置密码</el-button>
+            <el-button class="action-btn delete-btn" link @click="handleDelete(scope.row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -79,7 +78,7 @@
         <el-button type="primary" @click="handleSubmit">保存</el-button>
       </template>
     </el-dialog>
-  </AdminLayout>
+  </div>
 </template>
 
 <script setup>
@@ -89,7 +88,6 @@
  */
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import AdminLayout from '@/components/AdminLayout.vue'
 import request from '@/utils/request'
 
 // ==================== 查询条件 ====================
@@ -307,5 +305,39 @@ const handleResetPassword = (row) => {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+
+.action-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.edit-btn {
+  color: #1677ff;
+  background: rgba(22, 119, 255, 0.12);
+}
+
+.edit-btn:hover {
+  background: rgba(22, 119, 255, 0.2);
+}
+
+.reset-btn {
+  color: #fa8c16;
+  background: rgba(250, 140, 22, 0.12);
+}
+
+.reset-btn:hover {
+  background: rgba(250, 140, 22, 0.2);
+}
+
+.delete-btn {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.12);
+}
+
+.delete-btn:hover {
+  background: rgba(255, 77, 79, 0.2);
 }
 </style>

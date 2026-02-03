@@ -61,16 +61,6 @@
             <p>查看预约记录和状态</p>
           </div>
 
-          <div class="action-card" @click="goToSchedule">
-            <div class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-              <el-icon :size="32">
-                <Clock />
-              </el-icon>
-            </div>
-            <h3>课程表</h3>
-            <p>查看本周课程安排</p>
-          </div>
-
           <div class="action-card" @click="goToNotice">
             <div class="action-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
               <el-icon :size="32">
@@ -142,7 +132,7 @@
             @click="goToClassroomDetail(classroom.id)">
             <!-- 教室图片 -->
             <div class="classroom-image">
-              <img :src="classroom.imageUrl || `https://picsum.photos/seed/room${classroom.id}/400/300`"
+              <img :src="classroom.imageUrl"
                 :alt="classroom.name">
               <!-- 状态标签 -->
               <div class="status-badge" :class="classroom.status">
@@ -186,50 +176,6 @@
         <div class="pagination-wrapper">
           <el-pagination v-model="currentPage" :page-size="pageSize" :total="filteredClassrooms.length"
             layout="prev, pager, next, jumper" @current-change="handlePageChange" />
-        </div>
-      </div>
-    </div>
-
-    <!-- ==================== 【教师专属】待审批预约区域 ==================== -->
-    <!-- 只有教师能看到这个模块，展示待处理的学生预约申请 -->
-    <div v-if="isTeacher && pendingReservations.length > 0" class="pending-section">
-      <div class="section-wrapper">
-        <h2 class="section-title">
-          待审批申请
-          <span class="title-badge">{{ pendingReservations.length }}</span>
-        </h2>
-
-        <div class="pending-list">
-          <div v-for="item in pendingReservations.slice(0, 5)" :key="item.id" class="pending-item">
-            <div class="pending-info">
-              <div class="student-name">
-                <el-avatar :size="36">{{ item.studentName?.charAt(0) }}</el-avatar>
-                <span>{{ item.studentName }}</span>
-              </div>
-              <div class="pending-detail">
-                申请预约 <strong>{{ item.classroomName }}</strong>
-                <br>
-                <span class="time-info">{{ item.date }} {{ item.timeSlot }}</span>
-              </div>
-            </div>
-            <div class="pending-actions">
-              <el-button type="success" size="small" @click="approveReservation(item)">
-                通过
-              </el-button>
-              <el-button type="danger" size="small" @click="rejectReservation(item)">
-                拒绝
-              </el-button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 查看全部按钮 -->
-        <div class="view-all">
-          <el-button type="primary" link @click="goToApproval">
-            查看全部申请 <el-icon>
-              <ArrowRight />
-            </el-icon>
-          </el-button>
         </div>
       </div>
     </div>
@@ -332,7 +278,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '../../utils/request'
 import {
   Bell, ArrowRight, Phone, Message, Location,
-  Calendar, List, Clock, User, Checked, Reading
+  Calendar, List, User, Checked, Reading
 } from '@element-plus/icons-vue'
 
 // ==================== 路由和状态管理 ====================
@@ -391,9 +337,6 @@ const goToReservation = () => router.push('/classrooms')
 
 /** 跳转到我的预约 */
 const goToMyReservations = () => router.push('/my-reservations')
-
-/** 跳转到课程表 */
-const goToSchedule = () => router.push('/schedule')
 
 /** 跳转到公告列表 */
 const goToNotice = () => router.push('/notice')
@@ -672,23 +615,21 @@ const fetchNotices = async () => {
 }
 
 /**
- * 【教师专属】获取待审批预约列表
+ * 【教师】获取待审批预约
  */
 const fetchPendingReservations = async () => {
-  if (!isTeacher.value) return
-
-  // TODO: 从后端获取待审批数据
-  // const res = await request.get('/api/reservations/pending')
-  // pendingReservations.value = res.data
-
-  // 模拟数据
-  pendingReservations.value = [
-    { id: 1, studentName: '张三', classroomName: 'A201 多媒体教室', date: '2026-01-25', timeSlot: '14:00-16:00' },
-    { id: 2, studentName: '李四', classroomName: 'B301 物理实验室', date: '2026-01-26', timeSlot: '09:00-11:00' },
-    { id: 3, studentName: '王五', classroomName: 'C101 会议室', date: '2026-01-27', timeSlot: '15:00-17:00' }
-  ]
-  pendingCount.value = pendingReservations.value.length
+  if (!userStore.token) return
+  try {
+    const res = await request.get('/approvals/pending')
+    const list = Array.isArray(res?.data) ? res.data : []
+    pendingReservations.value = list
+    pendingCount.value = list.length
+  } catch (error) {
+    pendingReservations.value = []
+    pendingCount.value = 0
+  }
 }
+
 
 // ==================== 生命周期 ====================
 
@@ -869,7 +810,6 @@ onMounted(async () => {
 /* 教师专属卡片样式 */
 .action-card.teacher-card {
   border: 2px dashed var(--warning-color);
-  background: linear-gradient(135deg, #fffbf0 0%, #fff 100%);
 }
 
 .action-card.teacher-card::before {

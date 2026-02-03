@@ -1,5 +1,5 @@
 <template>
-  <AdminLayout breadcrumb="教室管理">
+  <div class="page-container">
     <div class="content-wrapper">
       <div class="panel">
         <div class="panel-header">
@@ -32,8 +32,8 @@
           </el-table-column>
           <el-table-column label="操作" width="180" fixed="right">
             <template #default="scope">
-              <el-button link @click="openEditDialog(scope.row)">编辑</el-button>
-              <el-button link type="danger" @click="confirmDelete(scope.row)">删除</el-button>
+              <el-button class="action-btn edit-btn" link @click="openEditDialog(scope.row)">编辑</el-button>
+              <el-button class="action-btn delete-btn" link @click="confirmDelete(scope.row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -86,7 +86,7 @@
         <el-button type="primary" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
-  </AdminLayout>
+  </div>
 </template>
 
 <script setup>
@@ -96,7 +96,6 @@
  * - 新增 / 编辑 / 删除
  */
 import { ref, computed, onMounted } from 'vue'
-import AdminLayout from '@/components/AdminLayout.vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 const classrooms = ref([])
@@ -296,5 +295,30 @@ onMounted(() => {
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid #eee;
+}
+
+.action-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.edit-btn {
+  color: #1677ff;
+  background: rgba(22, 119, 255, 0.12);
+}
+
+.edit-btn:hover {
+  background: rgba(22, 119, 255, 0.2);
+}
+
+.delete-btn {
+  color: #ff4d4f;
+  background: rgba(255, 77, 79, 0.12);
+}
+
+.delete-btn:hover {
+  background: rgba(255, 77, 79, 0.2);
 }
 </style>
