@@ -3,7 +3,7 @@
     <!-- 左侧菜单栏（公用） -->
     <aside class="sidebar">
       <div class="logo-section">
-        <img :src="logoUrl" alt="Logo" class="logo-img" />
+        <!-- <img :src="logoUrl" alt="Logo" class="logo-img" /> -->
         <span class="logo-text">教室预约系统</span>
       </div>
 
@@ -184,14 +184,14 @@ const handleLogout = () => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.logo-img {
+/* .logo-img {
   width: 28px;
   height: 28px;
   margin-right: 10px;
-}
+} */
 
 .logo-text {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
 }
 

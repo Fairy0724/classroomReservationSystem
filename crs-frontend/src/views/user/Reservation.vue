@@ -6,9 +6,7 @@
     <div class="container">
       <div class="header">
         <h1>提交预约申请</h1>
-        <p>请填写活动信息，系统将进行合规性与冲突检测。</p>
       </div>
-
       <!-- 教室基本信息展示（确保用户知道当前选择的教室） -->
       <div class="classroom-info">
         <h2>{{ classroom.building }}{{ classroom.roomNum }}</h2>
@@ -432,6 +430,8 @@ const getTimeRange = () => {
 
 .header h1 {
   margin: 0 0 8px;
+  /* 加粗 */
+  font-weight: bold;
 }
 
 .classroom-info {

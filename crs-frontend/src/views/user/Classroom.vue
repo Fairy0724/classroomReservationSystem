@@ -213,7 +213,7 @@ watch(() => route.query.keyword, (value) => {
   padding: 18px 20px;
   background: #ffffff;
   border-radius: 16px;
-  display: flex;
+  display: flex;  
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
@@ -254,7 +254,9 @@ watch(() => route.query.keyword, (value) => {
 
 .reset-btn {
   height: 36px;
+  /* 内边距 */
   padding: 0 16px;
+  margin:20px 0 0 20px;
   border: none;
   background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
   color: #fff;
