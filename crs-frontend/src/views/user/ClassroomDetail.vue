@@ -412,10 +412,11 @@ const parseTime = (timeStr) => {
 }
 
 // 默认日期规则：
-// - 若当前时间处于“最后时段开始前2小时及之后”，默认当天
-// - 否则默认第二天
+// - 优先兜底返回“当天”
+// - 仅在“规则可计算且有效”时，才根据 2 小时限制决定是否切到次日
 const getDefaultSelectedDate = () => {
   const todayStr = getLocalDateString()
+  if (!todayStr) return getLocalDateString(new Date())
   if (!periods.value.length) return todayStr
 
   const latest = periods.value
@@ -439,6 +440,7 @@ const getDefaultSelectedDate = () => {
 
   const now = new Date()
   const limitTime = new Date(latestStart.getTime() - 2 * 60 * 60 * 1000)
+  if (Number.isNaN(limitTime.getTime())) return todayStr
 
   if (now >= limitTime) return todayStr
 
@@ -446,11 +448,14 @@ const getDefaultSelectedDate = () => {
   tomorrow.setDate(tomorrow.getDate() + 1)
   return getLocalDateString(tomorrow)
 }
-
+// 初始化选中日期（默认当天或第二天）
 const initSelectedDate = () => {
-  const dateStr = getDefaultSelectedDate()
+  // 单日默认使用“当天”，避免被周逻辑影响
+  const dateStr = getLocalDateString()
   selectedDate.value = dateStr
-  selectedWeek.value = getWeekString(new Date(`${dateStr}T00:00:00`))
+  if (viewMode.value === 'week') {
+    selectedWeek.value = getWeekString(new Date(`${dateStr}T00:00:00`))
+  }
 }
 
 // 计算某个日期的“节次开始时间”（用于 2 小时预约限制）
@@ -660,6 +665,7 @@ watch([() => classroom.value.classroomId, selectedDate, viewMode], () => {
 
 // 周选择变化：同步更新 selectedDate（周一作为锚点）
 watch(selectedWeek, (val) => {
+  if (viewMode.value !== 'week') return
   if (!val) return
   const monday = getMondayFromWeek(val)
   if (monday) selectedDate.value = monday

@@ -14,8 +14,8 @@
   <div class="home-container">
 
     <!-- ==================== 顶部导航栏 ==================== -->
-    <NavBar v-model="searchQuery"  :show-home-link="false" 
-      @update:keyword="searchQuery = $event" @search="handleSearch" />
+    <NavBar v-model="searchQuery" :show-home-link="false" @update:keyword="searchQuery = $event"
+      @search="handleSearch" />
     <!-- ==================== 轮播图区域 ==================== -->
     <div class="hero-section">
       <el-carousel height="400px" :interval="5000" indicator-position="outside">
@@ -132,8 +132,7 @@
             @click="goToClassroomDetail(classroom.id)">
             <!-- 教室图片 -->
             <div class="classroom-image">
-              <img :src="classroom.imageUrl"
-                :alt="classroom.name">
+              <img :src="classroom.imageUrl" :alt="classroom.name">
               <!-- 状态标签 -->
               <div class="status-badge" :class="classroom.status">
                 {{ getStatusText(classroom.status) }}
