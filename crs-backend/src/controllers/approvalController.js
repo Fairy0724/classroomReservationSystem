@@ -195,7 +195,7 @@ const submitApproval = async (req, res) => {
     await connection.beginTransaction();
 
     const [rows] = await connection.query(
-      `SELECT reservation_id, status, classroom_id
+      `SELECT reservation_id, status, classroom_id, applicant_id, activity_name
 			 FROM reservation
 			 WHERE reservation_id = ?
 			 LIMIT 1`,
@@ -254,6 +254,36 @@ const submitApproval = async (req, res) => {
 				 WHERE reservation_id = ?`,
         [id]
       );
+    }
+
+    // 写入消息表（通知申请人）
+    try {
+      if (!record.applicant_id) {
+        console.warn('message insert skipped: missing applicant_id for reservation', id);
+      }
+      const [classroomRows] = await connection.query(
+        'SELECT building, room_num FROM classroom WHERE classroom_id = ? LIMIT 1',
+        [record.classroom_id]
+      );
+      const classroomText = classroomRows.length
+        ? `${classroomRows[0].building}${classroomRows[0].room_num}`
+        : `教室ID：${record.classroom_id}`;
+
+      const activityName = record.activity_name || '活动';
+      const title = '审批结果通知';
+      const reasonText = result === '驳回' && reason ? `，驳回理由：${reason}` : '';
+      const content = `您的【${activityName}】预约已${result === '通过' ? '通过' : '驳回'}${reasonText}`;
+
+      if (record.applicant_id) {
+        await connection.query(
+          `INSERT INTO message (user_id, type, title, content, send_time, is_read)
+           VALUES (?, ?, ?, ?, NOW(), 0)`,
+          [record.applicant_id, 'approval_result', title, content]
+        );
+      }
+    } catch (err) {
+      // 消息写入失败不影响审批主流程
+      console.warn('message insert failed:', err.message);
     }
 
     await connection.commit();

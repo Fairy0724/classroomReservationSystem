@@ -35,7 +35,10 @@
             <el-icon>
               <Bell />
             </el-icon> 消息提醒
-            <span v-if="unreadCount > 0" class="unread-dot" aria-label="未读"></span>
+            <!-- 未读数量徽标 -->
+            <span v-if="unreadCount > 0" class="unread-badge" aria-label="未读数量">
+              {{ unreadCount > 99 ? '99+' : unreadCount }}
+            </span>
           </RouterLink>
 
           <!-- 仅教师角色显示审批管理 -->
@@ -295,14 +298,20 @@ const handleInput = (event) => {
   padding-right: 14px;
 }
 
-.message-link .unread-dot {
+.message-link .unread-badge {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  top: -4px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
   background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 600;
 }
 
 .login-btn {

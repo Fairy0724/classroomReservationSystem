@@ -23,6 +23,7 @@ const ApprovalDetail = () => import('@/views/teacher/ApprovalDetail.vue')
 const Placeholder = () => import('@/views/Placeholder.vue')
 const Profile = () => import('@/views/user/Profile.vue')
 const MessageCenter = () => import('@/views/user/MessageCenter.vue')
+const MessageDetail = () => import('@/views/user/MessageDetail.vue')
 
 const routes = [
   {
@@ -119,6 +120,13 @@ const routes = [
         name: 'messageCenter',
         component: MessageCenter,
         meta: { requiresAuth: true, title: '消息通知' }
+      },
+      {
+        // 消息详情
+        path: 'messages/:id',
+        name: 'messageDetail',
+        component: MessageDetail,
+        meta: { requiresAuth: true, title: '消息详情' }
       },
       {
         // 账号设置

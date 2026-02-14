@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // 导入db
 const db = require('../db/db');
+const { startActivityReminderJob } = require('../jobs/activityReminder');
 // 调用
 db(
   // 连接成功回调
@@ -34,6 +35,9 @@ db(
     server.listen(port);
     server.on('error', onError);
     server.on('listening', onListening);
+
+    // 启动活动提醒定时任务
+    startActivityReminderJob();
 
     /**
      * Normalize a port into a number, string, or false.

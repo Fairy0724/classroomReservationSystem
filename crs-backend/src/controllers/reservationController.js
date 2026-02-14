@@ -226,6 +226,29 @@ const createReservation = async (req, res) => {
         `UPDATE reservation SET approved_at = NOW() WHERE reservation_id = ?`,
         [result.insertId]
       );
+
+      // 教师教学预约自动通过：写入消息通知申请人
+      try {
+        const [classroomRows] = await pool.query(
+          'SELECT building, room_num FROM classroom WHERE classroom_id = ? LIMIT 1',
+          [classroomId]
+        );
+        const classroomText = classroomRows.length
+          ? `${classroomRows[0].building}${classroomRows[0].room_num}`
+          : `教室ID：${classroomId}`;
+
+        const title = '审批结果通知';
+        const activityNameText = activityName || '活动';
+        const content = `您的【${activityNameText}-${activityType}】预约已通过，预约教室：${classroomText}，预约日期：${date} ${start}-${end}`;
+
+        await pool.query(
+          `INSERT INTO message (user_id, type, title, content, send_time, is_read)
+           VALUES (?, ?, ?, ?, NOW(), 0)`,
+          [userId, 'approval_result', title, content]
+        );
+      } catch (err) {
+        // 消息写入失败不影响预约主流程
+      }
     }
 
     res.json({

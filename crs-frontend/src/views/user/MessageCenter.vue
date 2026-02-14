@@ -25,36 +25,33 @@
       </div>
 
       <div class="action-bar">
-        <button class="btn danger" @click="handleDelete">删除</button>
+        <div class="action-left">
+          <button class="btn" @click="toggleSelect">
+            {{ selectionMode ? '取消选择' : '选择' }}
+          </button>
+          <button class="btn danger" :disabled="!selectionMode" @click="handleDelete">删除</button>
+        </div>
         <span class="hint">共 {{ messages.length }} 条</span>
       </div>
 
       <div class="message-list">
         <div v-if="!messages.length" class="empty">暂无消息</div>
         <div v-for="item in messages" :key="item.id" class="message-item"
-          :class="{ unread: !item.isRead, active: activeMessage?.id === item.id }" @click="openMessage(item)">
-          <label class="checkbox" @click.stop>
+          :class="{ unread: !item.isRead, selectable: selectionMode }" @click="handleItemClick(item)">
+          <!-- 未读红点：仅在未读时显示 -->
+          <span v-if="!item.isRead" class="unread-badge" aria-label="未读"></span>
+          <label v-if="selectionMode" class="checkbox" @click.stop>
             <input type="checkbox" :value="item.id" v-model="selectedIds" />
           </label>
           <div class="message-body">
             <div class="message-meta">
               <span class="type" :class="item.type">{{ formatType(item.type) }}</span>
               <span class="time">{{ formatTime(item.sendTime) }}</span>
-              <span v-if="!item.isRead" class="unread-dot" aria-label="未读"></span>
             </div>
             <div class="title">{{ item.title }}</div>
             <div class="summary">{{ item.summary }}</div>
           </div>
         </div>
-      </div>
-
-      <div v-if="activeMessage" class="message-detail">
-        <div class="detail-header">
-          <h3>{{ activeMessage.title }}</h3>
-          <span class="detail-time">{{ formatTime(activeMessage.sendTime) }}</span>
-        </div>
-        <div class="detail-type">{{ formatType(activeMessage.type) }}</div>
-        <div class="detail-content">{{ activeMessage.content }}</div>
       </div>
     </div>
   </div>
@@ -62,15 +59,17 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
 import request from '@/utils/request'
 
+const router = useRouter()
 const messages = ref([])
-const activeMessage = ref(null)
 const selectedIds = ref([])
 const filterStatus = ref('')
 const filterType = ref('')
+const selectionMode = ref(false)
 
 
 const page = ref(1)
@@ -120,7 +119,8 @@ const formatType = (type) => {
   const map = {
     approval_result: '审批结果',
     activity_reminder: '活动提醒',
-    system_notice: '系统通知'
+    system_notice: '系统通知',
+    approval: '审批结果'
   }
   return map[type] || '系统通知'
 }
@@ -143,8 +143,10 @@ const buildSummary = (item) => {
   const type = item.type
   const title = item.title || '预约'
   const content = String(item.content || '')
+  // 优先展示内容，避免审批结果被固定模板覆盖
+  if (content) return content.slice(0, 60)
   if (type === 'approval_result') {
-    const status = content.includes('驳回') || title.includes('驳回') ? '驳回' : '通过'
+    const status = title.includes('驳回') ? '驳回' : '通过'
     return `您的${title}已${status}`
   }
   if (type === 'activity_reminder') {
@@ -152,32 +154,25 @@ const buildSummary = (item) => {
     const timeText = match ? match[0] : '指定时间'
     return `您的${title}将于${timeText}开始`
   }
-  return content ? content.slice(0, 60) : '暂无摘要'
+  return '暂无摘要'
 }
 
-// 打开消息详情并标记为已读
-const openMessage = async (item) => {
-  try {
-    if (!item.content) {
-      const res = await request.get(`/messages/${item.id}`)
-      const detail = res?.data || res
-      item.content = detail?.content || item.content
-    }
-    activeMessage.value = item
-    if (!item.isRead) await markAsRead(item)
-  } catch {
-    ElMessage.error('详情加载异常，请重新点击')
+const toggleSelect = () => {
+  selectionMode.value = !selectionMode.value
+  if (!selectionMode.value) {
+    selectedIds.value = []
   }
 }
 
-// 标记消息为已读
-const markAsRead = async (item) => {
-  try {
-    await request.put(`/messages/${item.id}/read`)
-    item.isRead = true
-  } catch {
-    ElMessage.error('消息状态更新失败，请稍后重试')
+const handleItemClick = (item) => {
+  if (selectionMode.value) {
+    const current = new Set(selectedIds.value)
+    if (current.has(item.id)) current.delete(item.id)
+    else current.add(item.id)
+    selectedIds.value = Array.from(current)
+    return
   }
+  router.push({ path: `/messages/${item.id}` })
 }
 
 // 删除选中消息
@@ -189,9 +184,6 @@ const handleDelete = async () => {
   try {
     await Promise.all(selectedIds.value.map(id => request.delete(`/messages/${id}`)))
     messages.value = messages.value.filter(item => !selectedIds.value.includes(item.id))
-    if (activeMessage.value && selectedIds.value.includes(activeMessage.value.id)) {
-      activeMessage.value = null
-    }
     selectedIds.value = []
     ElMessage.success('删除成功')
   } catch {
@@ -275,6 +267,12 @@ onMounted(() => {
   margin-bottom: 12px;
 }
 
+.action-left {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .hint {
   color: #6b7280;
   font-size: 12px;
@@ -288,11 +286,16 @@ onMounted(() => {
 }
 
 .message-item {
+  position: relative;
   display: flex;
   gap: 12px;
   padding: 14px 18px;
   border-bottom: 1px solid #f0f2f5;
   cursor: pointer;
+}
+
+.message-item.selectable {
+  cursor: default;
 }
 
 .message-item:last-child {
@@ -301,10 +304,6 @@ onMounted(() => {
 
 .message-item.unread {
   background: #f8fafc;
-}
-
-.message-item.active {
-  background: #eef9f1;
 }
 
 .checkbox {
@@ -360,7 +359,11 @@ onMounted(() => {
   font-size: 13px;
 }
 
-.unread-dot {
+
+.unread-badge {
+  position: absolute;
+  top: 10px;
+  right: 14px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
