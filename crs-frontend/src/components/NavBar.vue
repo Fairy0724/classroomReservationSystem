@@ -31,6 +31,13 @@
             </el-icon> 我的预约
           </RouterLink>
 
+          <RouterLink to="/messages" class="nav-link message-link">
+            <el-icon>
+              <Bell />
+            </el-icon> 消息提醒
+            <span v-if="unreadCount > 0" class="unread-dot" aria-label="未读"></span>
+          </RouterLink>
+
           <!-- 仅教师角色显示审批管理 -->
           <RouterLink v-if="showApprovalLink && userStore.userInfo?.role === 'teacher'" to="/approval" class="nav-link">
             <el-icon>
@@ -79,12 +86,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import request from '@/utils/request'
 import {
-  HomeFilled, Calendar, User, Setting, SwitchButton, Checked, ArrowDown, OfficeBuilding
+  HomeFilled, Calendar, User, Setting, SwitchButton, Checked, ArrowDown, OfficeBuilding, Bell
 } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -128,6 +136,9 @@ const emit = defineEmits(['update:modelValue', 'update:keyword', 'search'])
 const router = useRouter()
 const userStore = useUserStore()
 
+const unreadCount = ref(0)
+let unreadTimer = null
+
 const isLoggedIn = computed(() => !!userStore.token && !!userStore.userInfo)
 
 const displayName = computed(() => {
@@ -148,7 +159,29 @@ onMounted(async () => {
       ElMessage.error('登录已过期，请重新登录')
     }
   }
+
+  if (isLoggedIn.value) {
+    await fetchUnreadCount()
+    unreadTimer = window.setInterval(fetchUnreadCount, 30000)
+  }
 })
+
+onUnmounted(() => {
+  if (unreadTimer) {
+    window.clearInterval(unreadTimer)
+    unreadTimer = null
+  }
+})
+
+const fetchUnreadCount = async () => {
+  try {
+    const res = await request.get('/messages/unread-count')
+    const count = Number(res?.unreadCount ?? res?.data?.unreadCount ?? res ?? 0)
+    unreadCount.value = Number.isFinite(count) ? count : 0
+  } catch {
+    unreadCount.value = 0
+  }
+}
 // 退出登录
 const handleLogout = async () => {
   try {
@@ -255,6 +288,21 @@ const handleInput = (event) => {
   border-radius: 6px;
   transition: all 0.3s;
   text-decoration: none;
+}
+
+.message-link {
+  position: relative;
+  padding-right: 14px;
+}
+
+.message-link .unread-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
 }
 
 .login-btn {

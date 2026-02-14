@@ -22,6 +22,7 @@ const Approval = () => import('@/views/teacher/Approval.vue')
 const ApprovalDetail = () => import('@/views/teacher/ApprovalDetail.vue')
 const Placeholder = () => import('@/views/Placeholder.vue')
 const Profile = () => import('@/views/user/Profile.vue')
+const MessageCenter = () => import('@/views/user/MessageCenter.vue')
 
 const routes = [
   {
@@ -113,6 +114,13 @@ const routes = [
         meta: { requiresAuth: true, title: '个人中心' }
       },
       {
+        // 消息通知
+        path: 'messages',
+        name: 'messageCenter',
+        component: MessageCenter,
+        meta: { requiresAuth: true, title: '消息通知' }
+      },
+      {
         // 账号设置
         path: 'settings',
         name: 'settings',
@@ -183,12 +191,15 @@ const router = createRouter({
 
 // 路由拦截逻辑与之前一致
 router.beforeEach(async (to, from, next) => {
-  // 若已有 token 但 role 为空，先拉取用户信息以判断角色
-  if (localStorage.getItem('token') && !userStore.role) {
+  const hasToken = !!localStorage.getItem('token')
+  const needsAuth = !!to.meta.requiresAuth
+
+  // 仅在需要登录的路由中拉取角色信息，避免公共页触发 401
+  if (hasToken && !userStore.role && needsAuth) {
     try {
-      await userStore.fetchProfile();
+      await userStore.fetchProfile()
     } catch {
-      // 忽略异常，交由后续鉴权处理
+      userStore.logout()
     }
   }
 
@@ -198,7 +209,7 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
   // 检查当前路由是否需要登录权限
-  if (to.meta.requiresAuth) {
+  if (needsAuth) {
     // 检查是否有 token
     if (!localStorage.getItem('token')) {
       next('/login'); // 无 token 跳转到登录页

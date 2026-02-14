@@ -27,6 +27,9 @@ app.use('/api/approvals', require('./src/routes/approval'));
 // 节次相关路由
 app.use('/api/class-periods', require('./src/routes/period'));
 
+// 消息相关路由
+app.use('/api/messages', require('./src/routes/message'));
+
 // 测试接口（验证服务是否能跑）
 app.get('/', (req, res) => {
   res.send('教室预约系统后端服务已启动！');
