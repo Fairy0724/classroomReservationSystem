@@ -221,6 +221,32 @@ const updateAnnouncement = async (req, res) => {
       return res.status(404).json({ msg: '公告不存在' });
     }
 
+    // 公告更新后再次通知用户
+    try {
+      const [users] = await pool.query(
+        `SELECT user_id FROM user WHERE role IN ('student','teacher')`
+      );
+
+      if (users.length) {
+        const values = users.map(row => [
+          row.user_id,
+          'system_notice',
+          '系统公告更新通知',
+          `【${title || '系统公告'}】公告内容已更新，请及时查看。`,
+          new Date(),
+          0
+        ]);
+
+        await pool.query(
+          'INSERT INTO message (user_id, type, title, content, send_time, is_read) VALUES ?',
+          [values]
+        );
+      }
+    } catch (err) {
+      // 通知写入失败不影响公告更新
+      console.warn('system notice update insert failed:', err.message);
+    }
+
     res.json({ msg: '公告更新成功' });
   } catch (err) {
     res.status(500).json({ msg: `系统服务异常：${err.message}` });

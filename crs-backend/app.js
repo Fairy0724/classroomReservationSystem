@@ -33,6 +33,9 @@ app.use('/api/messages', require('./src/routes/message'));
 // 系统公告相关路由
 app.use('/api/announcements', require('./src/routes/announcement'));
 
+// 管理员仪表盘相关路由
+app.use('/api/admin', require('./src/routes/adminDashboard'));
+
 // 测试接口（验证服务是否能跑）
 app.get('/', (req, res) => {
   res.send('教室预约系统后端服务已启动！');

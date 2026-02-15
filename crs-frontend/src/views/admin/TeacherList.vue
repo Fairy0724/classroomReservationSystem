@@ -4,7 +4,7 @@
       <!-- 顶部工具栏：查询 + 操作按钮 -->
       <div class="toolbar">
         <div class="toolbar-left">
-          <el-input v-model="query.keyword" placeholder="姓名 / 账号 / 手机 / 邮箱 / 工号" clearable @keyup.enter="handleSearch"
+          <el-input v-model="query.keyword" placeholder="姓名 / 工号 / 手机 / 邮箱" clearable @keyup.enter="handleSearch"
             style="width: 260px" />
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
@@ -18,9 +18,8 @@
       <!-- 教师列表表格 -->
       <el-table :data="tableData" v-loading="loading" border stripe style="width: 100%">
         <el-table-column type="index" label="序号" width="60" />
-        <el-table-column prop="username" label="账号" min-width="120" />
+        <el-table-column prop="username" label="工号" min-width="140" />
         <el-table-column prop="realName" label="姓名" min-width="120" />
-        <el-table-column prop="jobNo" label="工号" min-width="120" />
         <el-table-column prop="phone" label="手机号" min-width="130" />
         <el-table-column prop="email" label="邮箱" min-width="180" />
         <el-table-column label="院系" min-width="150">
@@ -47,14 +46,11 @@
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="520px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="账号" prop="username">
-          <el-input v-model="form.username" placeholder="请输入教师账号" />
+        <el-form-item label="工号" prop="username">
+          <el-input v-model="form.username" placeholder="请输入教师工号" />
         </el-form-item>
         <el-form-item label="姓名" prop="realName">
           <el-input v-model="form.realName" placeholder="请输入教师姓名" />
-        </el-form-item>
-        <el-form-item label="工号" prop="jobNo">
-          <el-input v-model="form.jobNo" placeholder="请输入教师工号" />
         </el-form-item>
         <el-form-item v-if="!isEdit" label="初始密码" prop="password">
           <el-input v-model="form.password" type="password" placeholder="默认建议：123456" />
@@ -111,7 +107,6 @@ const form = reactive({
   userId: '',
   username: '',
   realName: '',
-  jobNo: '',
   password: '',
   phone: '',
   email: '',
@@ -121,9 +116,8 @@ const form = reactive({
 
 // 表单校验规则
 const rules = {
-  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  username: [{ required: true, message: '请输入工号', trigger: 'blur' }],
   realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  jobNo: [{ required: true, message: '请输入工号', trigger: 'blur' }],
   password: [
     {
       validator: (rule, value, callback) => {
@@ -190,7 +184,6 @@ const openCreate = () => {
     userId: '',
     username: '',
     realName: '',
-    jobNo: '',
     password: '',
     phone: '',
     email: '',
@@ -208,7 +201,6 @@ const openEdit = (row) => {
     userId: row.userId,
     username: row.username,
     realName: row.realName,
-    jobNo: row.jobNo,
     password: '',
     phone: row.phone || '',
     email: row.email || '',
@@ -227,7 +219,6 @@ const handleSubmit = () => {
       await request.put(`/user/admin/users/${form.userId}`, {
         username: form.username,
         realName: form.realName,
-        jobNo: form.jobNo,
         phone: form.phone,
         email: form.email,
         department: form.department,
@@ -241,7 +232,6 @@ const handleSubmit = () => {
         password: form.password,
         role: 'teacher',
         realName: form.realName,
-        jobNo: form.jobNo,
         phone: form.phone,
         email: form.email,
         department: form.department,

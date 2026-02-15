@@ -33,6 +33,15 @@
           </div>
           <div ref="lineChartRef" class="chart-container line-chart"></div>
         </div>
+
+        <!-- 第三行：热门教室排行 -->
+        <div class="chart-card full-width">
+          <div class="chart-header">
+            <h3 class="chart-title">热门教室预约次数排行</h3>
+            <span class="chart-subtitle">统计维度：预约次数 TOP5</span>
+          </div>
+          <div ref="hotChartRef" class="chart-container line-chart"></div>
+        </div>
       </div>
 
       <!-- ========== 右侧统计卡片 ========== -->
@@ -106,6 +115,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import AdminLayout from '@/components/AdminLayout.vue'
 import * as echarts from 'echarts'
+import request from '@/utils/request'
 import {
   School, Calendar, UserFilled, Check
 } from '@element-plus/icons-vue'
@@ -115,19 +125,21 @@ import {
 
 // ==================== 统计数据 ====================
 const stats = ref({
-  classroomCount: 10,    // 教室数量
-  userCount: 156,        // 用户数量
-  reservationCount: 89,  // 预约数量
-  pendingCount: 5        // 待审批数量
+  classroomCount: 0,    // 教室数量
+  userCount: 0,        // 用户数量
+  reservationCount: 0, // 预约数量
+  pendingCount: 0      // 待审批数量
 })
 
 // ==================== 图表相关 ====================
 const pieChartRef = ref(null)
 const barChartRef = ref(null)
 const lineChartRef = ref(null)
+const hotChartRef = ref(null)
 let pieChart = null
 let barChart = null
 let lineChart = null
+let hotChart = null
 
 const route = useRoute()
 const isAdminHome = computed(() => route.path === '/admin')
@@ -148,7 +160,7 @@ const breadcrumbText = computed(() => {
 /**
  * 初始化饼状图 - 教室类型分布
  */
-const initPieChart = () => {
+const initPieChart = (data = []) => {
   if (!pieChartRef.value) return
   pieChart = echarts.init(pieChartRef.value)
 
@@ -182,14 +194,7 @@ const initPieChart = () => {
         fontSize: 11
       },
       labelLine: { show: true, length: 10, length2: 10 },
-      data: [
-        { value: 3, name: '普通教室' },
-        { value: 2, name: '多媒体教室' },
-        { value: 2, name: '实验室' },
-        { value: 1, name: '会议室' },
-        { value: 1, name: '报告厅' },
-        { value: 1, name: '自习室' }
-      ]
+      data: data.length ? data : [{ value: 0, name: '暂无数据' }]
     }]
   }
 
@@ -199,9 +204,12 @@ const initPieChart = () => {
 /**
  * 初始化柱状图 - 教室申请数量
  */
-const initBarChart = () => {
+const initBarChart = (data = []) => {
   if (!barChartRef.value) return
   barChart = echarts.init(barChartRef.value)
+
+  const categories = data.map(item => item.name || '未知')
+  const values = data.map(item => item.value || 0)
 
   const option = {
     tooltip: {
@@ -217,7 +225,7 @@ const initBarChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['普通教室', '多媒体', '实验室', '会议室', '报告厅', '自习室'],
+      data: categories.length ? categories : ['暂无数据'],
       axisLabel: {
         fontSize: 11,
         interval: 0,
@@ -235,14 +243,7 @@ const initBarChart = () => {
     series: [{
       type: 'bar',
       barWidth: '50%',
-      data: [
-        { value: 28, itemStyle: { color: '#8B4513' } },
-        { value: 6, itemStyle: { color: '#DEB887' } },
-        { value: 8, itemStyle: { color: '#F4A460' } },
-        { value: 12, itemStyle: { color: '#D2B48C' } },
-        { value: 25, itemStyle: { color: '#CD853F' } },
-        { value: 10, itemStyle: { color: '#A0522D' } }
-      ],
+      data: values.length ? values : [0],
       itemStyle: { borderRadius: [4, 4, 0, 0] }
     }]
   }
@@ -253,17 +254,9 @@ const initBarChart = () => {
 /**
  * 初始化折线图 - 近一周预约趋势
  */
-const initLineChart = () => {
+const initLineChart = (dates = [], values = []) => {
   if (!lineChartRef.value) return
   lineChart = echarts.init(lineChartRef.value)
-
-  // 获取近7天日期
-  const dates = []
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date()
-    date.setDate(date.getDate() - i)
-    dates.push(`${date.getMonth() + 1}/${date.getDate()}`)
-  }
 
   const option = {
     tooltip: {
@@ -280,7 +273,11 @@ const initLineChart = () => {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: dates,
+      data: dates.length ? dates.map(item => {
+        const d = new Date(item)
+        if (Number.isNaN(d.getTime())) return item
+        return `${d.getMonth() + 1}/${d.getDate()}`
+      }) : ['暂无数据'],
       axisLine: { lineStyle: { color: '#ddd' } },
       axisLabel: { color: '#666' }
     },
@@ -296,7 +293,7 @@ const initLineChart = () => {
       smooth: true,
       symbol: 'circle',
       symbolSize: 8,
-      data: [1, 3, 0, 2, 1, 2, 1],
+      data: values.length ? values : [0],
       lineStyle: { color: '#5B9BD5', width: 2 },
       itemStyle: {
         color: '#5B9BD5',
@@ -331,12 +328,46 @@ const initLineChart = () => {
 }
 
 /**
+ * 初始化热门教室排行 - 横向柱状图
+ */
+const initHotChart = (data = []) => {
+  if (!hotChartRef.value) return
+  hotChart = echarts.init(hotChartRef.value)
+
+  const names = data.map(item => item.name || '未知')
+  const values = data.map(item => item.value || 0)
+
+  const option = {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    grid: { left: '3%', right: '4%', top: '12%', bottom: '3%', containLabel: true },
+    xAxis: { type: 'value', axisLine: { show: false }, splitLine: { lineStyle: { color: '#f0f0f0' } } },
+    yAxis: {
+      type: 'category',
+      data: names.length ? names : ['暂无数据'],
+      axisLine: { lineStyle: { color: '#ddd' } },
+      axisLabel: { color: '#666' }
+    },
+    series: [
+      {
+        type: 'bar',
+        data: values.length ? values : [0],
+        barWidth: 14,
+        itemStyle: { color: '#5B9BD5', borderRadius: [0, 6, 6, 0] }
+      }
+    ]
+  }
+
+  hotChart.setOption(option)
+}
+
+/**
  * 处理窗口大小变化
  */
 const handleResize = () => {
   pieChart?.resize()
   barChart?.resize()
   lineChart?.resize()
+  hotChart?.resize()
 }
 
 /**
@@ -348,16 +379,31 @@ const handleLogout = () => {
 }
 
 // ==================== 生命周期 ====================
-onMounted(() => {
-  // 初始化图表
-  initPieChart()
-  initBarChart()
-  initLineChart()
+const fetchDashboardData = async () => {
+  const res = await request.get('/admin/dashboard')
+  const data = res?.data || res
 
+  // 统计卡片
+  stats.value = {
+    classroomCount: data?.stats?.classroomCount || 0,
+    userCount: data?.stats?.userCount || 0,
+    reservationCount: data?.stats?.reservationCount || 0,
+    pendingCount: data?.stats?.pendingCount || 0
+  }
+
+  // 图表数据
+  initPieChart(data?.classroomTypeStats || [])
+  initBarChart(data?.reservationTypeStats || [])
+  initLineChart(data?.weeklyTrend?.dates || [], data?.weeklyTrend?.values || [])
+  initHotChart(data?.hotClassrooms || [])
+}
+
+onMounted(() => {
   // 监听窗口变化
   window.addEventListener('resize', handleResize)
 
-  // TODO: 从后端获取统计数据
+  // 拉取真实数据并初始化图表
+  fetchDashboardData()
 })
 
 onUnmounted(() => {
@@ -365,6 +411,7 @@ onUnmounted(() => {
   pieChart?.dispose()
   barChart?.dispose()
   lineChart?.dispose()
+  hotChart?.dispose()
 })
 </script>
 

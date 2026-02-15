@@ -35,12 +35,12 @@
             </el-icon>
             <span>教室类型</span>
           </el-menu-item>
-          <el-menu-item index="/admin/feedback">
+          <!-- <el-menu-item index="/admin/feedback">
             <el-icon>
               <ChatDotRound />
             </el-icon>
             <span>反馈信息</span>
-          </el-menu-item>
+          </el-menu-item> -->
           <el-menu-item index="/admin/notice">
             <el-icon>
               <Bell />

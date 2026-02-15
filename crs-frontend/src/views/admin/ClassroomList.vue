@@ -12,7 +12,7 @@
         </div>
         <!-- 教室列表 -->
         <el-table :data="classrooms" stripe border v-loading="loading" class="table">
-          <el-table-column prop="classroomId" label="ID" width="80" />
+          <el-table-column prop="classroomId" label="序号" width="80" />
           <el-table-column prop="building" label="楼号" width="100" />
           <el-table-column prop="floor" label="楼层" width="80" />
           <el-table-column prop="roomNum" label="教室编号" width="120" />
