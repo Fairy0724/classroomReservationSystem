@@ -1,6 +1,29 @@
 // 教室控制器（数据库版）
 const { pool } = require('../db/db')
 
+// 注意：当教室状态更新为“维护中”时，需要自动发布系统公告。
+// 这些工具函数用于保持逻辑集中且易读。
+
+// 检查公告表是否存在，避免表缺失导致请求直接失败。
+const tableExists = async (tableName) => {
+  const [rows] = await pool.query(
+    `SELECT table_name FROM information_schema.tables
+     WHERE table_schema = DATABASE() AND table_name = ?`,
+    [tableName]
+  )
+  return rows.length > 0
+}
+
+// 统一状态文本格式，避免空格等问题导致判断失误。
+const normalizeStatus = (value) => String(value || '').trim()
+
+// 判断是否需要触发“维护中”公告。
+const shouldPublishMaintenanceAnnouncement = (beforeStatus, afterStatus) => {
+  const before = normalizeStatus(beforeStatus)
+  const after = normalizeStatus(afterStatus)
+  return before !== after && after === '维护中'
+}
+
 // 解析 JSON 数组字段
 const parseJsonArray = (value) => {
   if (Array.isArray(value)) return value
@@ -143,6 +166,26 @@ const updateClassroom = async (req, res) => {
     const { id } = req.params
     const payload = req.body || {}
 
+    // 如果这次更新包含状态字段，先读取当前状态和位置。
+    // 这样才能判断是否需要发布维护公告。
+    let prevStatus = null
+    let classroomLabel = ''
+    if (payload.status !== undefined) {
+      const [rows] = await pool.query(
+        'SELECT status, building, room_num FROM classroom WHERE classroom_id = ?',
+        [id]
+      )
+
+      if (!rows.length) {
+        return res.status(404).json({ msg: '教室不存在' })
+      }
+
+      prevStatus = rows[0].status
+      const building = rows[0].building || ''
+      const roomNum = rows[0].room_num || ''
+      classroomLabel = `${building}${roomNum ? '-' + roomNum : ''}`.trim()
+    }
+
     const fields = []
     const values = []
 
@@ -193,6 +236,53 @@ const updateClassroom = async (req, res) => {
 
     values.push(id)
     await pool.query(`UPDATE classroom SET ${fields.join(', ')} WHERE classroom_id = ?`, values)
+
+    // 只有当状态变更为“维护中”时才发布系统公告。
+    if (payload.status !== undefined && shouldPublishMaintenanceAnnouncement(prevStatus, payload.status)) {
+      const adminId = req.user?.user_id
+      const hasAnnouncementTable = await tableExists('system_announcement')
+
+      if (adminId && hasAnnouncementTable) {
+        const title = '教室维护通知'
+        const content = classroomLabel
+          ? `教室 ${classroomLabel} 已调整为维护中状态，暂停预约。`
+          : '教室已调整为维护中状态，暂停预约。'
+
+        // 1) 写入系统公告表，供公告列表展示。
+        await pool.query(
+          `INSERT INTO system_announcement
+           (admin_id, title, content, publish_time, expire_time, is_top, is_active, view_count)
+           VALUES (?, ?, ?, NOW(), NULL, 0, 1, 0)`,
+          [adminId, title, content]
+        )
+
+        // 2) 给所有教师/学生写入系统通知消息。
+        try {
+          const [users] = await pool.query(
+            `SELECT user_id FROM user WHERE role IN ('student','teacher')`
+          )
+
+          if (users.length) {
+            const values = users.map(row => [
+              row.user_id,
+              'system_notice',
+              title,
+              content,
+              new Date(),
+              0
+            ])
+
+            await pool.query(
+              'INSERT INTO message (user_id, type, title, content, send_time, is_read) VALUES ?',
+              [values]
+            )
+          }
+        } catch (err) {
+          // 通知写入失败不影响教室更新流程。
+          console.warn('maintenance notice insert failed:', err.message)
+        }
+      }
+    }
 
     res.json({ msg: '更新成功' })
   } catch (err) {
