@@ -2,6 +2,7 @@
 // 导入db
 const db = require('../db/db');
 const { startActivityReminderJob } = require('../jobs/activityReminder');
+const { startStatisticalReportJob } = require('../jobs/statisticalReport');
 // 调用
 db(
   // 连接成功回调
@@ -38,6 +39,8 @@ db(
 
     // 启动活动提醒定时任务
     startActivityReminderJob();
+    // 启动统计报表定时任务
+    startStatisticalReportJob();
 
     /**
      * Normalize a port into a number, string, or false.
