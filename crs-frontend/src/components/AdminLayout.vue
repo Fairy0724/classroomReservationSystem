@@ -3,7 +3,6 @@
     <!-- 左侧菜单栏（公用） -->
     <aside class="sidebar">
       <div class="logo-section">
-        <!-- <img :src="logoUrl" alt="Logo" class="logo-img" /> -->
         <span class="logo-text">教室预约系统</span>
       </div>
 
@@ -29,18 +28,19 @@
             </el-icon>
             <span>教室信息</span>
           </el-menu-item>
+          <el-menu-item index="/admin/course-schedule">
+            <el-icon>
+              <Document />
+            </el-icon>
+            <span>课程管理</span>
+          </el-menu-item>
           <el-menu-item index="/admin/classroom-type">
             <el-icon>
               <Grid />
             </el-icon>
             <span>教室类型</span>
           </el-menu-item>
-          <!-- <el-menu-item index="/admin/feedback">
-            <el-icon>
-              <ChatDotRound />
-            </el-icon>
-            <span>反馈信息</span>
-          </el-menu-item> -->
+          <!-- <el-menu-item index -->
           <el-menu-item index="/admin/notice">
             <el-icon>
               <Bell />
@@ -54,7 +54,7 @@
             <el-icon>
               <User />
             </el-icon>
-            <span>用户信息</span>
+            <span>用户管理</span>
           </template>
           <el-menu-item index="/admin/teachers">
             <el-icon>
@@ -142,6 +142,7 @@ import {
   ArrowDown,
   SwitchButton
 } from '@element-plus/icons-vue'
+import { el } from 'element-plus/es/locale/index.mjs'
 
 const props = defineProps({
   breadcrumb: {

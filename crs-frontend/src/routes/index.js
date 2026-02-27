@@ -10,6 +10,7 @@ const Layout = () => import('@/components/Layout.vue')
 const Home = () => import('@/views/user/Home.vue')
 const Admin = () => import('@/views/admin/Admin.vue')
 const AdminClassroomList = () => import('@/views/admin/ClassroomList.vue')
+const AdminCourseScheduleList = () => import('@/views/admin/CourseScheduleList.vue')
 const AdminClassroomTypeList = () => import('@/views/admin/ClassroomTypeList.vue')
 const AdminTeacherList = () => import('@/views/admin/TeacherList.vue')
 const AdminStudentList = () => import('@/views/admin/StudentList.vue')
@@ -149,6 +150,13 @@ const routes = [
             path: 'classroom',
             name: 'adminClassroom',
             component: AdminClassroomList,
+            meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
+          },
+          {
+            // 管理员：课程管理
+            path: 'course-schedule',
+            name: 'adminCourseSchedule',
+            component: AdminCourseScheduleList,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
           },
           {

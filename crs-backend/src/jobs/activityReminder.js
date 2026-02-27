@@ -1,3 +1,4 @@
+// 定期扫描预约并发提醒
 const { pool } = require('../db/db');
 const {
   activityReminderLeadMinutes,

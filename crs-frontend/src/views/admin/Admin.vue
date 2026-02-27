@@ -106,6 +106,7 @@ const breadcrumbText = computed(() => {
   const map = {
     '/admin': '系统首页',
     '/admin/classroom': '教室管理',
+    '/admin/course-schedule': '课程管理',
     '/admin/classroom-type': '教室类型',
     '/admin/teachers': '教师信息',
     '/admin/students': '学生信息',
