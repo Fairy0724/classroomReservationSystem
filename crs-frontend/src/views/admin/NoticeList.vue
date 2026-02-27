@@ -25,7 +25,11 @@
         <el-table :data="tableData" v-loading="loading" border stripe class="table">
           <el-table-column type="index" label="序号" width="60" />
           <el-table-column prop="title" label="标题" min-width="220" />
-          <el-table-column prop="publishTime" label="发布时间" min-width="170" />
+          <el-table-column prop="publishTime" label="发布时间" min-width="170">
+            <template #default="scope">
+              {{ formatTime(scope.row.publishTime) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="expireTime" label="过期时间" min-width="170">
             <template #default="scope">
               {{ scope.row.expireTime || '长期有效' }}
@@ -139,6 +143,19 @@ const normalizeRow = (row) => {
     isActive: Number(row.is_active ?? row.isActive ?? 1),
     viewCount: Number(row.view_count ?? row.viewCount ?? 0)
   }
+}
+
+// 将 ISO 时间或时间戳格式化为 
+const formatTime = (time) => {
+  if (!time) return '--'
+  const date = new Date(time)
+  if (Number.isNaN(date.getTime())) return String(time)
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  const hh = String(date.getHours()).padStart(2, '0')
+  const mi = String(date.getMinutes()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}`
 }
 
 const fetchList = async () => {
