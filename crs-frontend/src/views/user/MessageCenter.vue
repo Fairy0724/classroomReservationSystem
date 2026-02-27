@@ -29,6 +29,9 @@
           <button class="btn" @click="toggleSelect">
             {{ selectionMode ? '取消选择' : '选择' }}
           </button>
+          <button v-if="selectionMode" class="btn" @click="toggleSelectAll">
+            {{ isAllSelected ? '取消全选' : '全选' }}
+          </button>
           <button class="btn danger" :disabled="!selectionMode" @click="handleDelete">删除</button>
         </div>
         <span class="hint">共 {{ messages.length }} 条</span>
@@ -58,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
@@ -70,6 +73,11 @@ const selectedIds = ref([])
 const filterStatus = ref('')
 const filterType = ref('')
 const selectionMode = ref(false)
+// 是否已全选（用于按钮文案和逻辑分支）
+const isAllSelected = computed(() => {
+  if (!messages.value.length) return false
+  return selectedIds.value.length === messages.value.length
+})
 
 
 const page = ref(1)
@@ -161,6 +169,16 @@ const toggleSelect = () => {
   selectionMode.value = !selectionMode.value
   if (!selectionMode.value) {
     selectedIds.value = []
+  }
+}
+
+// 全选/取消全选：仅在选择模式下生效
+const toggleSelectAll = () => {
+  if (!messages.value.length) return
+  if (isAllSelected.value) {
+    selectedIds.value = []
+  } else {
+    selectedIds.value = messages.value.map(item => item.id)
   }
 }
 

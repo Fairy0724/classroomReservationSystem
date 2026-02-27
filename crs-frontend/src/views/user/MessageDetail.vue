@@ -8,7 +8,10 @@
           <h2>消息详情</h2>
           <p class="subtitle">查看消息完整内容</p>
         </div>
-        <button class="btn" @click="goBack">返回</button>
+        <div class="header-actions">
+          <button class="btn danger" @click="handleDelete">删除</button>
+          <button class="btn" @click="goBack">返回</button>
+        </div>
       </div>
 
       <div v-if="loading" class="loading">加载中...</div>
@@ -29,7 +32,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
 import request from '@/utils/request'
 
@@ -97,6 +100,25 @@ const goBack = () => {
   router.push('/messages')
 }
 
+// 删除当前消息后返回列表
+const handleDelete = async () => {
+  if (!message.value?.id) return
+  try {
+    await ElMessageBox.confirm('确定要删除这条消息吗？', '删除确认', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await request.delete(`/messages/${message.value.id}`)
+    ElMessage.success('删除成功')
+    router.push('/messages')
+  } catch (err) {
+    // 用户取消时不提示错误
+    if (err === 'cancel' || err === 'close') return
+    ElMessage.error('消息删除失败，请稍后重试')
+  }
+}
+
 onMounted(() => {
   fetchMessageDetail()
 })
@@ -141,6 +163,18 @@ onMounted(() => {
   background: #fff;
   cursor: pointer;
   color: #374151;
+}
+
+.btn.danger {
+  color: #b91c1c;
+  border-color: #f3b4b4;
+  background: #fff5f5;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .detail-card {

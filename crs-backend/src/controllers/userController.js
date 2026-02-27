@@ -2,6 +2,44 @@ const { pool } = require('../db/db');
 const jwt = require('jsonwebtoken');
 const { jwtSecret } = require('../config/config');
 
+// ==================== 登录失败次数限制（内存级） ====================
+// 说明：这里使用内存 Map 进行“临时锁定”，无需改表即可满足需求。
+// 注意：服务重启后会清空计数；如需持久化可改为写库。
+const FAILED_LOGIN_LIMIT = 3; // 第 3 次起触发锁定
+const LOCK_DURATION_MS = 10 * 60 * 1000; // 临时锁定 10 分钟
+const loginAttemptMap = new Map();
+
+const getAttemptInfo = (username) => {
+  if (!username) return { count: 0, lockedUntil: 0 };
+  const info = loginAttemptMap.get(username) || { count: 0, lockedUntil: 0 };
+
+  // 如果锁定时间已过，自动清零
+  if (info.lockedUntil && Date.now() >= info.lockedUntil) {
+    loginAttemptMap.delete(username);
+    return { count: 0, lockedUntil: 0 };
+  }
+
+  return info;
+};
+
+const recordFailedAttempt = (username) => {
+  const info = getAttemptInfo(username);
+  const nextCount = info.count + 1;
+  const nextInfo = { count: nextCount, lockedUntil: info.lockedUntil };
+
+  // 第 3 次及以上直接锁定
+  if (nextCount >= FAILED_LOGIN_LIMIT) {
+    nextInfo.lockedUntil = Date.now() + LOCK_DURATION_MS;
+  }
+
+  loginAttemptMap.set(username, nextInfo);
+  return nextInfo;
+};
+
+const clearAttempts = (username) => {
+  if (username) loginAttemptMap.delete(username);
+};
+
 // ==================== 管理员用户管理工具函数 ====================
 // 将数据库字段映射为前端可读字段（避免直接暴露密码）
 const mapUserRow = (row) => {
@@ -33,8 +71,19 @@ const ADMIN_ALLOWED_ROLES = ['teacher', 'student'];
 // 用户登录
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
-    return res.status(400).json({ msg: '用户名和密码不能为空' });
+  // A-3：账号为空提示
+  if (!username) {
+    return res.status(400).json({ msg: '请输入学号/工号' });
+  }
+  // A-4：密码为空提示
+  if (!password) {
+    return res.status(400).json({ msg: '请输入密码' });
+  }
+
+  // A-7：如果账号已被临时锁定，直接提示并阻止登录
+  const attemptInfo = getAttemptInfo(username);
+  if (attemptInfo.lockedUntil && Date.now() < attemptInfo.lockedUntil) {
+    return res.status(429).json({ msg: '密码错误次数过多，请稍后重试' });
   }
   try {
     const [rows] = await pool.query(
@@ -45,12 +94,21 @@ exports.login = async (req, res) => {
       [username]
     );
     if (!rows.length) {
-      return res.status(401).json({ msg: '用户不存在' });
+      // A-3：账号未注册
+      return res.status(401).json({ msg: '该账号错误' });
     }
     const user = rows[0];
     if (user.password !== password) {
-      return res.status(401).json({ msg: '密码错误' });
+      // A-7：密码错误次数记录与提示
+      const nextInfo = recordFailedAttempt(username);
+      if (nextInfo.lockedUntil && Date.now() < nextInfo.lockedUntil) {
+        return res.status(429).json({ msg: '密码错误次数过多，请稍后重试' });
+      }
+      return res.status(401).json({ msg: '密码错误，请重新输入' });
     }
+
+    // 登录成功，清除失败计数
+    clearAttempts(username);
     // 生成token
     const token = jwt.sign({ user_id: user.user_id, username: user.username, role: user.role }, jwtSecret, { expiresIn: '2h' });
     // 返回用户信息（去除密码）

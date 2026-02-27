@@ -53,8 +53,10 @@
                   <label for="account" class="form-label">学号/工号</label>
                   <div class="input-wrapper">
                     <!-- 替换后 -->
-                    <el-icon class="input-icon"><User /></el-icon>
-                    
+                    <el-icon class="input-icon">
+                      <User />
+                    </el-icon>
+
                     <input type="text" id="account" v-model="account" placeholder="请输入学号/工号" class="form-input">
                   </div>
                 </div>
@@ -62,7 +64,9 @@
                 <div class="form-group">
                   <label for="password" class="form-label">密码</label>
                   <div class="input-wrapper">
-                    <el-icon class="input-icon"><Lock /></el-icon>
+                    <el-icon class="input-icon">
+                      <Lock />
+                    </el-icon>
                     <input type="password" id="password" v-model="password" placeholder="请输入密码" class="form-input">
                   </div>
                 </div>
@@ -150,6 +154,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 import { useUserStore } from '../stores/userStore';
 import { User, Lock } from '@element-plus/icons-vue'
 
@@ -162,13 +167,31 @@ const account = ref('');       // 登录账户
 const password = ref('');      // 登录密码
 const isAgree = ref(false);    // 协议同意状态
 
+// 统一提示入口，便于后续替换为更复杂的提示组件
+const showMessage = (message) => {
+  ElMessage({ message, type: 'warning', duration: 2000 });
+};
+
 // 登录处理函数
 const handleLogin = async () => {
-  // 表单验证
-  if (!account.value || !password.value || !isAgree.value) {
-    alert('请填写完整信息并勾选协议');
+  // A-3：学号/工号为空
+  if (!account.value) {
+    showMessage('请输入学号/工号');
     return;
   }
+
+  // A-4：密码为空
+  if (!password.value) {
+    showMessage('请输入密码');
+    return;
+  }
+
+  // A-5：未勾选协议
+  if (!isAgree.value) {
+    showMessage('请先同意隐私条款和服务条款');
+    return;
+  }
+
   try {
     // 调用用户存储中的登录方法
     await userStore.login(account.value, password.value);
@@ -186,7 +209,16 @@ const handleLogin = async () => {
     }
   } catch (error) {
     console.error('登录失败:', error);
-    alert('登录失败，请检查账户和密码或联系管理员');
+
+    // A-3/A-7：根据后端返回文案进行提示（账号错误/密码错误/临时锁定）
+    const backendMessage = error?.response?.data?.msg;
+    if (backendMessage) {
+      showMessage(backendMessage);
+      return;
+    }
+
+    // 兜底提示
+    showMessage('登录失败，请检查账户和密码或联系管理员');
   }
 };
 </script>
