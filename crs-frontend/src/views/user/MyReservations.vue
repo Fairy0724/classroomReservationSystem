@@ -88,8 +88,7 @@
           <!-- 操作区：查看详情 / 取消预约 -->
           <div class="card-actions">
             <button class="btn-outline" @click="openDetail(item.reservation_id)">查看详情</button>
-            <button class="btn-danger" :disabled="!canCancel(item.status)"
-              @click="cancelReservation(item.reservation_id)">
+            <button class="btn-danger" :disabled="!canCancel(item)" @click="cancelReservation(item.reservation_id)">
               取消预约
             </button>
           </div>
@@ -117,12 +116,12 @@
         <div v-else-if="detailError" class="state error">{{ detailError }}</div>
         <div v-else-if="detail" class="detail-body">
           <div class="row"><span class="label">教室</span><span class="value">{{ getClassroomName(detail.classroom_id)
-          }}</span></div>
+              }}</span></div>
           <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(detail.date) }}</span></div>
           <div class="row"><span class="label">时间</span><span class="value">{{ detail.start_time }} - {{ detail.end_time
-          }}</span></div>
+              }}</span></div>
           <div class="row"><span class="label">节次</span><span class="value">{{ formatPeriods(detail.period_ids)
-          }}</span>
+              }}</span>
           </div>
           <div class="row"><span class="label">活动名称</span><span class="value">{{ detail.activity_name }}</span></div>
           <div class="row"><span class="label">活动类型</span><span class="value">{{ detail.activity_type }}</span></div>
@@ -131,7 +130,7 @@
           <div class="row"><span class="label">用途说明</span><span class="value">{{ detail.purpose || '—' }}</span></div>
           <div class="row"><span class="label">状态</span><span class="value">{{ detail.status }}</span></div>
           <div class="row"><span class="label">提交时间</span><span class="value">{{ formatDateTime(detail.submitted_at)
-          }}</span></div>
+              }}</span></div>
         </div>
         <div class="detail-actions">
           <button class="btn" @click="detailVisible = false">关闭</button>
@@ -237,8 +236,29 @@ const fetchData = async () => {
   }
 }
 
-// 是否允许取消：已取消/已驳回/已过期不允许
-const canCancel = (status) => !['已取消', '已驳回', '已过期'].includes(status)
+// 取消预约的提前量限制（小时）
+const CANCEL_LEAD_HOURS = 2
+
+// 组合预约日期与开始时间，得到可比较的时间点
+const getReservationStartTime = (item) => {
+  if (!item?.date || !item?.start_time) return null
+  const dateText = dayjs(item.date).format('YYYY-MM-DD')
+  const timeText = String(item.start_time).slice(0, 5)
+  const combined = dayjs(`${dateText} ${timeText}`, 'YYYY-MM-DD HH:mm')
+  return combined.isValid() ? combined : null
+}
+
+// 是否允许取消：状态可取消 + 距开始时间至少 2 小时
+const canCancel = (item) => {
+  if (!item) return false
+  if (['已取消', '已驳回', '已过期'].includes(item.status)) return false
+
+  const startTime = getReservationStartTime(item)
+  if (!startTime) return false
+
+  const diffHours = startTime.diff(dayjs(), 'hour', true)
+  return diffHours >= CANCEL_LEAD_HOURS
+}
 
 // 查看详情：走后端接口，确保数据实时
 const openDetail = async (id) => {
@@ -259,6 +279,13 @@ const openDetail = async (id) => {
 // 取消预约：弹窗确认后调用后端
 const cancelReservation = async (id) => {
   try {
+    // 二次校验：防止按钮被绕过
+    const current = reservations.value.find(item => String(item.reservation_id) === String(id))
+    if (!canCancel(current)) {
+      ElMessage.warning('仅可在预约开始前两小时取消')
+      return
+    }
+
     await ElMessageBox.confirm('确定要取消该预约吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
