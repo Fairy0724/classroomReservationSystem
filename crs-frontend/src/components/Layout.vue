@@ -11,11 +11,20 @@
         <component :is="Component" v-if="!route.meta.keepAlive" :key="route.fullPath" />
       </router-view>
     </main>
+    <!-- 全站通用页脚（登录页不显示） -->
+    <AppFooter v-if="showFooter" />
   </div>
 </template>
 
 <script setup>
-import { RouterView } from 'vue-router'
+import { RouterView, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import AppFooter from '@/components/AppFooter.vue'
+
+const route = useRoute()
+
+// 登录页不展示页脚
+const showFooter = computed(() => route.path !== '/login')
 
 defineOptions({
   name: 'LayoutPage',

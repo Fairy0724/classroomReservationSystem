@@ -221,7 +221,7 @@ onMounted(() => {
 <style scoped>
 .message-center-page {
   min-height: 100vh;
-  background: #f5f5f5;
+  background: #f0f4f8;
 }
 
 .container {

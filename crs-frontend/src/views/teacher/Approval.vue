@@ -22,19 +22,19 @@
       <template v-if="viewMode === 'manage'">
         <!-- 统计卡片 -->
         <div class="stats">
-          <div class="stat-card">
+          <div class="stat-card" :class="{ active: isStatActive('待审批') }" @click="handleStatClick('待审批')">
             <div class="stat-label">待审批</div>
             <div class="stat-value">{{ stats.pending }}</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" :class="{ active: isStatActive('已通过') }" @click="handleStatClick('已通过')">
             <div class="stat-label">已通过</div>
             <div class="stat-value">{{ stats.approved }}</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" :class="{ active: isStatActive('已驳回') }" @click="handleStatClick('已驳回')">
             <div class="stat-label">已驳回</div>
             <div class="stat-value">{{ stats.rejected }}</div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" :class="{ active: isStatActive('') }" @click="handleStatClick('')">
             <div class="stat-label">总计</div>
             <div class="stat-value">{{ stats.total }}</div>
           </div>
@@ -165,6 +165,18 @@ const resetFilters = () => {
   filters.value = { keyword: '', status: '' }
 }
 
+// 统计卡片点击：自动把状态写入筛选条件
+const handleStatClick = (status) => {
+  // 强制回到“审批管理”视图，确保列表可见
+  viewMode.value = 'manage'
+  filters.value.status = status
+}
+
+// 当前选中的统计卡片（用于高亮）
+const isStatActive = (status) => {
+  return filters.value.status === status
+}
+
 const handleSearch = () => {
   // 搜索跳转由 NavBar 统一处理
 }
@@ -267,9 +279,9 @@ onMounted(() => {
 }
 
 .switch-btn.active {
-  background: #ecf5ff;
-  border-color: #409eff;
-  color: #409eff;
+  background: #eafaf1;
+  border-color: #2ecc71;
+  color: #2ecc71;
 }
 
 .stats {
@@ -284,6 +296,19 @@ onMounted(() => {
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+}
+
+.stat-card.active {
+  border-color: #2ecc71;
+  box-shadow: 0 10px 20px rgba(46, 204, 113, 0.18);
 }
 
 .stat-label {
@@ -405,7 +430,7 @@ onMounted(() => {
 }
 
 .btn {
-  background: #409eff;
+  background: #2ecc71;
   color: #fff;
   border: none;
   border-radius: 6px;
