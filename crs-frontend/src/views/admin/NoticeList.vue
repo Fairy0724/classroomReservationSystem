@@ -59,9 +59,8 @@
         </el-table>
 
         <div class="pager">
-          <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
-            :page-size="pageSize" :current-page="page" @size-change="handleSizeChange"
-            @current-change="handlePageChange" />
+          <AppPagination v-if="total > 0" :page="page" :total="total" :page-size="pageSize"
+            @change="fetchList" />
         </div>
       </div>
     </div>
@@ -101,6 +100,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
+import AppPagination from '@/components/AppPagination.vue'
 
 const query = reactive({
   keyword: '',
@@ -189,17 +189,6 @@ const handleReset = () => {
   query.isActive = ''
   query.isTop = ''
   page.value = 1
-  fetchList()
-}
-
-const handleSizeChange = (size) => {
-  pageSize.value = size
-  page.value = 1
-  fetchList()
-}
-
-const handlePageChange = (current) => {
-  page.value = current
   fetchList()
 }
 

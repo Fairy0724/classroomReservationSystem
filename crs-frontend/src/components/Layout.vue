@@ -23,8 +23,8 @@ import AppFooter from '@/components/AppFooter.vue'
 
 const route = useRoute()
 
-// 登录页不展示页脚
-const showFooter = computed(() => route.path !== '/login')
+// 登录页与管理端页面不展示页脚
+const showFooter = computed(() => route.path !== '/login' && !route.path.startsWith('/admin'))
 
 defineOptions({
   name: 'LayoutPage',

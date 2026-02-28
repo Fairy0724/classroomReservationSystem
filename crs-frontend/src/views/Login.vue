@@ -4,7 +4,7 @@
     <header class="header">
       <div class="container">
         <div class="logo-wrapper">
-          <img src="../assets/images/logo.png" alt="教室预约系统 Logo" class="logo">
+          <span class="brand-text">教室预约系统</span>
         </div>
         <a href="/" class="go-home">
           <span>进入教室预约系统首页</span>
@@ -95,7 +95,6 @@
       <div class="container">
         <div class="footer-top">
           <div class="footer-logo">
-            <img src="../assets/images/logo.png" alt="教室预约系统 Logo" class="logo">
             <p class="slogan">智能·便捷·高效</p>
           </div>
 
@@ -283,18 +282,29 @@ ul {
 .header {
   background-color: white;
   box-shadow: var(--box-shadow);
-  padding: 20px 0;
+  padding: 0;
 }
 
 .header .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  min-height: 100px;
+  padding: 16px 20px;
 }
 
 .logo-wrapper {
   display: flex;
   align-items: center;
+}
+
+/* 登录页品牌文字，风格与用户端导航一致 */
+.brand-text {
+  font-size: 24px;
+  font-weight: 600;
+  color: #22c55e;
+  letter-spacing: 0;
+  line-height: normal;
 }
 
 .logo {

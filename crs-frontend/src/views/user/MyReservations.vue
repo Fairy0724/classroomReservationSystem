@@ -96,17 +96,8 @@
       </div>
 
       <!-- 分页区域 -->
-      <div v-if="filteredReservations.length" class="pagination">
-        <span class="page-info">共 {{ filteredReservations.length }} 条</span>
-        <select v-model.number="pageSize">
-          <option :value="5">5 条/页</option>
-          <option :value="10">10 条/页</option>
-          <option :value="20">20 条/页</option>
-        </select>
-        <button class="page-btn" :disabled="page === 1" @click="page--">上一页</button>
-        <span class="page-num">{{ page }} / {{ totalPages }}</span>
-        <button class="page-btn" :disabled="page === totalPages" @click="page++">下一页</button>
-      </div>
+      <AppPagination v-if="filteredReservations.length" :page="page" :total="filteredReservations.length"
+        :page-size="pageSize" @change="handlePageChange" />
     </div>
     <!-- 详情弹窗（简易版） -->
     <div v-if="detailVisible" class="detail-mask" @click.self="detailVisible = false">
@@ -116,12 +107,12 @@
         <div v-else-if="detailError" class="state error">{{ detailError }}</div>
         <div v-else-if="detail" class="detail-body">
           <div class="row"><span class="label">教室</span><span class="value">{{ getClassroomName(detail.classroom_id)
-              }}</span></div>
+          }}</span></div>
           <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(detail.date) }}</span></div>
           <div class="row"><span class="label">时间</span><span class="value">{{ detail.start_time }} - {{ detail.end_time
-              }}</span></div>
+          }}</span></div>
           <div class="row"><span class="label">节次</span><span class="value">{{ formatPeriods(detail.period_ids)
-              }}</span>
+          }}</span>
           </div>
           <div class="row"><span class="label">活动名称</span><span class="value">{{ detail.activity_name }}</span></div>
           <div class="row"><span class="label">活动类型</span><span class="value">{{ detail.activity_type }}</span></div>
@@ -130,7 +121,7 @@
           <div class="row"><span class="label">用途说明</span><span class="value">{{ detail.purpose || '—' }}</span></div>
           <div class="row"><span class="label">状态</span><span class="value">{{ detail.status }}</span></div>
           <div class="row"><span class="label">提交时间</span><span class="value">{{ formatDateTime(detail.submitted_at)
-              }}</span></div>
+          }}</span></div>
         </div>
         <div class="detail-actions">
           <button class="btn" @click="detailVisible = false">关闭</button>
@@ -154,6 +145,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import request from '@/utils/request'
 import NavBar from '@/components/NavBar.vue'
+import AppPagination from '@/components/AppPagination.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 
@@ -208,12 +200,15 @@ const filteredReservations = computed(() => {
   })
 })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredReservations.value.length / pageSize.value)))
-
 const paginatedReservations = computed(() => {
   const startIndex = (page.value - 1) * pageSize.value
   return filteredReservations.value.slice(startIndex, startIndex + pageSize.value)
 })
+
+// 分页切换时，回到列表顶部
+const handlePageChange = () => {
+  document.querySelector('.content')?.scrollIntoView({ behavior: 'smooth' })
+}
 
 // 拉取数据：先拿预约列表，再拿教室列表用于显示
 const fetchData = async () => {

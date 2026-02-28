@@ -173,8 +173,8 @@
 
         <!-- 分页组件 -->
         <div class="pagination-wrapper">
-          <el-pagination v-model="currentPage" :page-size="pageSize" :total="filteredClassrooms.length"
-            layout="prev, pager, next, jumper" @current-change="handlePageChange" />
+          <AppPagination v-if="filteredClassrooms.length" :page="currentPage" :total="filteredClassrooms.length"
+            :page-size="pageSize" @change="handlePageChange" />
         </div>
       </div>
     </div>
@@ -223,6 +223,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '@/components/NavBar.vue'
+import AppPagination from '@/components/AppPagination.vue'
 import { useUserStore } from '../../stores/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '../../utils/request'

@@ -46,12 +46,7 @@
         </div>
       </div>
 
-      <div v-if="total > 0" class="pagination">
-        <span class="page-info">共 {{ total }} 条</span>
-        <button class="page-btn" :disabled="page === 1" @click="handlePageChange(page - 1)">上一页</button>
-        <span class="page-num">{{ page }} / {{ totalPages }}</span>
-        <button class="page-btn" :disabled="page === totalPages" @click="handlePageChange(page + 1)">下一页</button>
-      </div>
+      <AppPagination v-if="total > 0" :page="page" :total="total" :page-size="pageSize" @change="fetchList" />
     </div>
   </div>
 </template>
@@ -62,10 +57,11 @@
  * - 支持分页与关键词查询
  * - 点击卡片进入详情页
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import request from '@/utils/request'
 import NavBar from '@/components/NavBar.vue'
+import AppPagination from '@/components/AppPagination.vue'
 
 const router = useRouter()
 
@@ -110,8 +106,6 @@ const normalizeRow = (row) => {
   }
 }
 
-const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize.value)))
-
 const fetchList = async () => {
   loading.value = true
   error.value = ''
@@ -142,16 +136,6 @@ const handleSearch = () => {
 
 const handleReset = () => {
   keyword.value = ''
-  page.value = 1
-  fetchList()
-}
-
-const handlePageChange = (nextPage) => {
-  page.value = nextPage
-  fetchList()
-}
-
-const handleSizeChange = () => {
   page.value = 1
   fetchList()
 }
