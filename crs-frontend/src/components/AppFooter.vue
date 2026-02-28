@@ -27,9 +27,6 @@
           <li>
             <RouterLink to="/notice">系统公告</RouterLink>
           </li>
-          <li>
-            <RouterLink to="/help">使用帮助</RouterLink>
-          </li>
         </ul>
       </div>
 
@@ -69,7 +66,7 @@ import { Phone, Message, Location } from '@element-plus/icons-vue'
 .footer {
   background-color: #2c3e50;
   color: #fff;
-  margin-top: 40px;
+  margin-top: 0;
   padding: 40px 0 0;
 }
 

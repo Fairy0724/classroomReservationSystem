@@ -68,8 +68,8 @@ main {
   flex: 1;
   width: 100%;
   margin: 0 auto;
-  background: #fff;
-  min-height: 800px;
+  background: transparent;
+  min-height: 0;
   box-sizing: border-box;
 }
 

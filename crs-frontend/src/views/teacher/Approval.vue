@@ -76,7 +76,7 @@
             <div class="card-body">
               <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(item.date) }}</span></div>
               <div class="row"><span class="label">时间</span><span class="value">{{ item.start_time }} - {{ item.end_time
-                  }}</span></div>
+              }}</span></div>
               <div class="row"><span class="label">活动</span><span class="value">{{ item.activity_name }}</span></div>
               <div class="row"><span class="label">类型</span><span class="value">{{ item.activity_type }}</span></div>
               <div class="row"><span class="label">人数</span><span class="value">{{ item.participant_count }}</span>
@@ -251,7 +251,9 @@ onMounted(() => {
 
 .content {
   max-width: 1100px;
-  margin: 32px auto;
+  /* 居中对齐 */
+  margin: 0 auto;
+  margin-top: 32px;
   padding: 0 20px 40px;
   height: auto;
   /* 显式设置为 auto，确保不限制高度 */
