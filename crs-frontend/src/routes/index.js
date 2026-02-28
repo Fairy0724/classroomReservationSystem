@@ -26,6 +26,8 @@ const Placeholder = () => import('@/views/Placeholder.vue')
 const Profile = () => import('@/views/user/Profile.vue')
 const MessageCenter = () => import('@/views/user/MessageCenter.vue')
 const MessageDetail = () => import('@/views/user/MessageDetail.vue')
+const NoticeList = () => import('@/views/user/NoticeList.vue')
+const NoticeDetail = () => import('@/views/user/NoticeDetail.vue')
 
 const routes = [
   {
@@ -99,8 +101,15 @@ const routes = [
         // 系统公告
         path: 'notice',
         name: 'notice',
-        component: Placeholder,
+        component: NoticeList,
         meta: { keepAlive: true, title: '系统公告' }
+      },
+      {
+        // 公告详情
+        path: 'notice/:id',
+        name: 'noticeDetail',
+        component: NoticeDetail,
+        meta: { keepAlive: false, title: '公告详情' }
       },
       {
         // 使用帮助

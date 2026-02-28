@@ -9,6 +9,8 @@ router.get('/', announcementController.listPublicAnnouncements);
 
 // 管理员：公告列表
 router.get('/admin', auth, requireAdmin, announcementController.listAdminAnnouncements);
+// 公告详情（用户侧）
+router.get('/:id', announcementController.getPublicAnnouncementDetail);
 // 管理员：发布公告
 router.post('/', auth, requireAdmin, announcementController.createAnnouncement);
 // 管理员：更新公告

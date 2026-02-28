@@ -85,7 +85,7 @@
             <span v-if="pendingCount > 0" class="action-badge">{{ pendingCount }}</span>
           </div>
 
-          <div v-if="isTeacher" class="action-card teacher-card" @click="goToMyCourses">
+          <!-- <div v-if="isTeacher" class="action-card teacher-card" @click="goToMyCourses">
             <div class="action-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
               <el-icon :size="32">
                 <Reading />
@@ -93,7 +93,7 @@
             </div>
             <h3>我的课程</h3>
             <p>管理我的授课安排</p>
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -477,43 +477,6 @@ const quickReserve = (classroom) => {
   })
 }
 
-// ==================== 【教师专属】审批操作 ====================
-
-/**
- * 通过预约申请
- */
-const approveReservation = async (item) => {
-  try {
-    // TODO: 调用API通过申请
-    // await request.post(`/api/reservations/${item.id}/approve`)
-    ElMessage.success(`已通过 ${item.studentName} 的预约申请`)
-    // 从列表中移除
-    pendingReservations.value = pendingReservations.value.filter(r => r.id !== item.id)
-    pendingCount.value--
-  } catch (error) {
-    ElMessage.error('操作失败，请重试')
-  }
-}
-
-/**
- * 拒绝预约申请
- */
-const rejectReservation = async (item) => {
-  try {
-    const { value: reason } = await ElMessageBox.prompt('请输入拒绝原因', '拒绝申请', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputPlaceholder: '请输入拒绝原因（选填）'
-    })
-    // TODO: 调用API拒绝申请
-    // await request.post(`/api/reservations/${item.id}/reject`, { reason })
-    ElMessage.success(`已拒绝 ${item.studentName} 的预约申请`)
-    pendingReservations.value = pendingReservations.value.filter(r => r.id !== item.id)
-    pendingCount.value--
-  } catch {
-    // 用户取消
-  }
-}
 
 // ==================== 数据获取方法 ====================
 
@@ -596,21 +559,48 @@ const fetchClassrooms = async () => {
   }
 }
 
+// ==================== 公告数据处理 ====================
+
+// 时间格式化（YYYY-MM-DD）
+const formatNoticeTime = (time) => {
+  if (!time) return '--'
+  const date = new Date(time)
+  if (Number.isNaN(date.getTime())) return String(time)
+  const yyyy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+// 生成公告摘要（去空白 + 截断）
+const buildNoticeSummary = (content) => {
+  const text = String(content || '').replace(/\s+/g, ' ').trim()
+  if (!text) return '—'
+  return text.length > 40 ? `${text.slice(0, 40)}...` : text
+}
+
+const normalizeNotice = (row) => {
+  return {
+    id: row.announcement_id ?? row.announcementId ?? row.id,
+    title: row.title,
+    summary: buildNoticeSummary(row.content),
+    createTime: formatNoticeTime(row.publish_time ?? row.publishTime)
+  }
+}
+
 /**
  * 获取系统公告
  */
 const fetchNotices = async () => {
-  // TODO: 从后端获取公告数据
-  // const res = await request.get('/api/notices')
-  // notices.value = res.data
-
-  // 模拟数据
-  notices.value = [
-    { id: 1, title: '关于调整教室预约时间的通知', summary: '自2026年2月1日起，教室预约开放时间调整为每日8:00-22:00...', createTime: '2026-01-20' },
-    { id: 2, title: '寒假期间教室使用安排', summary: '寒假期间（1月25日-2月15日），仅开放部分自习室供学生使用...', createTime: '2026-01-18' },
-    { id: 3, title: '新增智能推荐功能上线公告', summary: '系统新增智能推荐功能，可根据您的使用习惯推荐合适的教室...', createTime: '2026-01-15' },
-    { id: 4, title: '教室设备维护公告', summary: 'D501报告厅将于1月22日-1月25日进行设备升级维护，暂停预约...', createTime: '2026-01-12' }
-  ]
+  try {
+    const res = await request.get('/announcements', {
+      params: { page: 1, pageSize: 4 }
+    })
+    const rows = Array.isArray(res?.data) ? res.data : []
+    notices.value = rows.map(normalizeNotice)
+  } catch (error) {
+    notices.value = []
+  }
 }
 
 /**
@@ -964,7 +954,8 @@ onMounted(async () => {
 }
 
 .status-badge.available {
-  background-color: var(--success-color);
+  /* background-color: var(--success-color); */
+  background-color: var(--primary-color);
 }
 
 .status-badge.occupied {

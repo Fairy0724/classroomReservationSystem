@@ -23,7 +23,7 @@ const normalizeExpireTime = (value) => {
   return date;
 };
 
-// 公告列表（用户侧，过滤未下架/未过期）
+// 公告列表（用户侧，过滤未下架/未过期，支持关键词）
 const listPublicAnnouncements = async (req, res) => {
   try {
     const hasTable = await tableExists('system_announcement');
@@ -31,14 +31,23 @@ const listPublicAnnouncements = async (req, res) => {
       return res.status(400).json({ msg: '系统公告表 system_announcement 不存在' });
     }
 
+    const { keyword } = req.query || {};
     const page = Math.max(Number(req.query.page || 1), 1);
     const pageSize = Math.min(Math.max(Number(req.query.pageSize || 10), 1), 50);
     const offset = (page - 1) * pageSize;
 
     const where = ['is_active = 1', '(expire_time IS NULL OR expire_time > NOW())'];
+    const params = [];
+
+    if (keyword) {
+      where.push('(title LIKE ? OR content LIKE ?)');
+      const key = `%${keyword}%`;
+      params.push(key, key);
+    }
 
     const [[countRow]] = await pool.query(
-      `SELECT COUNT(*) AS total FROM system_announcement WHERE ${where.join(' AND ')}`
+      `SELECT COUNT(*) AS total FROM system_announcement WHERE ${where.join(' AND ')}`,
+      params
     );
 
     const [rows] = await pool.query(
@@ -47,12 +56,52 @@ const listPublicAnnouncements = async (req, res) => {
        WHERE ${where.join(' AND ')}
        ORDER BY is_top DESC, publish_time DESC, announcement_id DESC
        LIMIT ? OFFSET ?`,
-      [pageSize, offset]
+      [...params, pageSize, offset]
     );
 
     res.json({
       data: rows,
       pagination: { page, pageSize, total: countRow?.total || 0 }
+    });
+  } catch (err) {
+    res.status(500).json({ msg: `系统服务异常：${err.message}` });
+  }
+};
+
+// 公告详情（用户侧，过滤未下架/未过期，浏览量 +1）
+const getPublicAnnouncementDetail = async (req, res) => {
+  try {
+    const hasTable = await tableExists('system_announcement');
+    if (!hasTable) {
+      return res.status(400).json({ msg: '系统公告表 system_announcement 不存在' });
+    }
+
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      `SELECT announcement_id, admin_id, title, content, publish_time, expire_time, is_top, is_active, view_count
+       FROM system_announcement
+       WHERE announcement_id = ? AND is_active = 1 AND (expire_time IS NULL OR expire_time > NOW())
+       LIMIT 1`,
+      [id]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ msg: '公告不存在或已下架' });
+    }
+
+    const detail = rows[0];
+
+    await pool.query(
+      'UPDATE system_announcement SET view_count = view_count + 1 WHERE announcement_id = ?',
+      [id]
+    );
+
+    res.json({
+      data: {
+        ...detail,
+        view_count: Number(detail.view_count || 0) + 1
+      }
     });
   } catch (err) {
     res.status(500).json({ msg: `系统服务异常：${err.message}` });
@@ -279,6 +328,7 @@ const deleteAnnouncement = async (req, res) => {
 
 module.exports = {
   listPublicAnnouncements,
+  getPublicAnnouncementDetail,
   listAdminAnnouncements,
   createAnnouncement,
   updateAnnouncement,
