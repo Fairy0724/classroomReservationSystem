@@ -74,10 +74,6 @@
           <!-- 操作按钮（仅展示入口，表单在预约页） -->
           <div class="action-bar">
             <button class="btn-reserve" @click="goToReserve">去预约</button>
-            <button class="btn-favorite" @click="toggleFavorite">
-              <i :class="isFavorite ? 'icon-heart-filled' : 'icon-heart'"></i>
-              收藏教室
-            </button>
           </div>
 
           <!-- 使用须知（替换服务承诺） -->
@@ -249,7 +245,6 @@ const classroom = ref({
 
 const searchQuery = ref('')
 const currentTab = ref('detail')
-const isFavorite = ref(false)
 // 选择的日期：既是“单日”的日期，也是“周视图”的锚点
 const selectedDate = ref('')
 // 周选择器绑定值：YYYY-Www
@@ -569,36 +564,6 @@ const formatDateLabel = (dateStr) => {
   return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-// ==================== 收藏功能（本地模拟） ====================
-const FAVORITE_KEY = 'favorite_classrooms'
-
-/** 读取收藏状态（本地存储模拟） */
-const checkFavorite = () => {
-  const list = JSON.parse(localStorage.getItem(FAVORITE_KEY) || '[]')
-  isFavorite.value = list.includes(String(route.params.id))
-}
-
-/** 切换收藏状态 */
-const toggleFavorite = () => {
-  if (!userStore.token) {
-    router.push('/login')
-    return
-  }
-  const list = JSON.parse(localStorage.getItem(FAVORITE_KEY) || '[]')
-  const id = String(route.params.id)
-  if (list.includes(id)) {
-    const nextList = list.filter(item => item !== id)
-    localStorage.setItem(FAVORITE_KEY, JSON.stringify(nextList))
-    isFavorite.value = false
-    ElMessage.success('已取消收藏')
-  } else {
-    list.push(id)
-    localStorage.setItem(FAVORITE_KEY, JSON.stringify(list))
-    isFavorite.value = true
-    ElMessage.success('收藏成功')
-  }
-}
-
 // ==================== 预约入口 ====================
 
 /** 跳转到预约页面（预约表单单独页面） */
@@ -645,7 +610,6 @@ const fetchClassroom = async () => {
 // 初始化
 onMounted(async () => {
   fetchClassroom()
-  checkFavorite()
   await fetchPeriods()
   initSelectedDate()
 })
@@ -804,8 +768,7 @@ watch(viewMode, (mode) => {
   margin-bottom: 30px;
 }
 
-.btn-reserve,
-.btn-favorite {
+.btn-reserve {
   padding: 12px 30px;
   border: none;
   border-radius: 6px;
@@ -819,10 +782,6 @@ watch(viewMode, (mode) => {
   flex: 2;
 }
 
-.btn-favorite {
-  background: #f8f9fa;
-  color: #666;
-}
 
 .use-guidelines {
   display: flex;
