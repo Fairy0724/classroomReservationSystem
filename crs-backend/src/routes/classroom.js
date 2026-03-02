@@ -7,6 +7,9 @@ const requireAdmin = require('../middlewares/admin');
 // 获取教室列表或单个教室（支持 query 参数 id / keyword）
 router.get('/', classroomController.getClassrooms);
 
+// 获取教室负责教师（teacher_classroom_relation）
+router.get('/:id/teacher', classroomController.getResponsibleTeacher);
+
 // 管理员：新增教室
 router.post('/', auth, requireAdmin, classroomController.createClassroom);
 

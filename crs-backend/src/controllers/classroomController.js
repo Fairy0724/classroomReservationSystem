@@ -114,6 +114,55 @@ const getClassrooms = async (req, res) => {
   }
 }
 
+/**
+ * 获取教室负责教师（从 teacher_classroom_relation 关联 teacher 表）
+ * 返回：{ teacherId, teacherName }
+ */
+const getResponsibleTeacher = async (req, res) => {
+  const { id } = req.params
+  if (!id) {
+    return res.status(400).json({ msg: '缺少教室ID' })
+  }
+
+  try {
+    const hasRelation = await tableExists('teacher_classroom_relation')
+    if (!hasRelation) {
+      return res.json({ teacherId: null, teacherName: null })
+    }
+
+    const hasTeacher = await tableExists('teacher')
+    if (!hasTeacher) {
+      const [rows] = await pool.query(
+        'SELECT teacher_id FROM teacher_classroom_relation WHERE classroom_id = ? ORDER BY id ASC LIMIT 1',
+        [id]
+      )
+      const teacherId = rows.length ? rows[0].teacher_id : null
+      return res.json({ teacherId, teacherName: null })
+    }
+
+    const [rows] = await pool.query(
+      `SELECT tcr.teacher_id, t.name
+       FROM teacher_classroom_relation tcr
+       LEFT JOIN teacher t ON t.teacher_id = tcr.teacher_id
+       WHERE tcr.classroom_id = ?
+       ORDER BY tcr.id ASC
+       LIMIT 1`,
+      [id]
+    )
+
+    if (!rows.length) {
+      return res.json({ teacherId: null, teacherName: null })
+    }
+
+    return res.json({
+      teacherId: rows[0].teacher_id ?? null,
+      teacherName: rows[0].name ?? null
+    })
+  } catch (err) {
+    return res.status(500).json({ msg: '服务器错误', error: err.message })
+  }
+}
+
 // 新增教室（管理员）
 const createClassroom = async (req, res) => {
   try {
@@ -303,6 +352,7 @@ const deleteClassroom = async (req, res) => {
 
 module.exports = {
   getClassrooms,
+  getResponsibleTeacher,
   createClassroom,
   updateClassroom,
   deleteClassroom

@@ -178,6 +178,7 @@
             <p>楼层：{{ classroom.floor }}</p>
             <p>教室编号：{{ classroom.roomNum }}</p>
             <p>教室类型：{{ classroom.type }}</p>
+            <p>负责教师：{{ classroom.responsibleTeacher || classroom.teacherName || '待分配' }}</p>
             <p>设备：{{ classroom.equipment || '设备待完善' }}</p>
           </div>
           <!-- 设备参数 -->
@@ -238,6 +239,7 @@ const classroom = ref({
   equipment: '',
   type: '',
   status: '',
+  responsibleTeacher: '',
   mainImage: '',
   extraImages: [],
   images: []
@@ -607,9 +609,22 @@ const fetchClassroom = async () => {
   ].filter(Boolean)
 }
 
+// 拉取负责教师（teacher_classroom_relation -> teacher.teacher_name）
+const fetchResponsibleTeacher = async () => {
+  const classroomId = route.params.id
+  if (!classroomId) return
+  try {
+    const res = await request.get(`/classrooms/${classroomId}/teacher`)
+    classroom.value.responsibleTeacher = res?.teacherName || ''
+  } catch {
+    classroom.value.responsibleTeacher = ''
+  }
+}
+
 // 初始化
 onMounted(async () => {
   fetchClassroom()
+  fetchResponsibleTeacher()
   await fetchPeriods()
   initSelectedDate()
 })
