@@ -67,7 +67,17 @@
                     <el-icon class="input-icon">
                       <Lock />
                     </el-icon>
-                    <input type="password" id="password" v-model="password" placeholder="请输入密码" class="form-input">
+                    <!-- 密码输入框默认隐藏，可通过右侧眼睛按钮切换显示/隐藏 -->
+                    <input :type="isPasswordVisible ? 'text' : 'password'" id="password" v-model="password"
+                      placeholder="请输入密码" class="form-input form-input--with-action">
+                    <!-- 眼睛图标：点击切换密码显示状态 -->
+                    <button type="button" class="toggle-password" @click="togglePassword"
+                      :aria-label="isPasswordVisible ? '隐藏密码' : '显示密码'">
+                      <el-icon>
+                        <View v-if="!isPasswordVisible" />
+                        <Hide v-else />
+                      </el-icon>
+                    </button>
                   </div>
                 </div>
 
@@ -155,7 +165,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { useUserStore } from '../stores/userStore';
-import { User, Lock } from '@element-plus/icons-vue'
+import { User, Lock, View, Hide } from '@element-plus/icons-vue'
 
 // 引入用户状态管理和路由
 const userStore = useUserStore();
@@ -165,6 +175,12 @@ const router = useRouter();
 const account = ref('');       // 登录账户
 const password = ref('');      // 登录密码
 const isAgree = ref(false);    // 协议同意状态
+const isPasswordVisible = ref(false); // 控制密码是否显示
+
+// 切换密码显示/隐藏
+const togglePassword = () => {
+  isPasswordVisible.value = !isPasswordVisible.value;
+};
 
 // 统一提示入口，便于后续替换为更复杂的提示组件
 const showMessage = (message) => {
@@ -532,10 +548,40 @@ ul {
   transition: all 0.3s ease;
 }
 
+/* 右侧有操作按钮的输入框预留空间 */
+.form-input--with-action {
+  padding-right: 44px;
+}
+
 .form-input:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(0, 179, 138, 0.2);
+}
+
+/* 眼睛按钮样式 */
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-lighter);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-password:hover {
+  color: var(--primary-color);
+}
+
+.toggle-password:focus-visible {
+  outline: 2px solid rgba(0, 179, 138, 0.35);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .agreement {
