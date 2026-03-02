@@ -18,7 +18,11 @@ service.interceptors.request.use(config => {
 service.interceptors.response.use(
   res => res.data,
   err => {
-    ElMessage.error(err.response?.data?.msg || '请求失败')
+    // 登录页会自行处理提示，避免重复弹窗
+    const requestUrl = err.config?.url || ''
+    if (!requestUrl.includes('/user/login')) {
+      ElMessage.error(err.response?.data?.msg || '请求失败')
+    }
     return Promise.reject(err)
   }
 )
