@@ -8,7 +8,8 @@
 
       <!-- ========== 右侧统计卡片 ========== -->
       <div class="stats-section">
-        <div class="stat-card" style="--accent-color: #409EFF;">
+        <!-- 跳转教室管理 -->
+        <div class="stat-card" style="--accent-color: #409EFF;" @click="$router.push('/admin/classroom')">
           <div class="stat-icon">
             <el-icon :size="32">
               <School />
