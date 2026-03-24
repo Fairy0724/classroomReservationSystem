@@ -158,6 +158,9 @@ const deleteClassroomType = async (req, res) => {
     }
     res.json({ msg: '删除成功' })
   } catch (err) {
+    if (err && err.code === 'ER_ROW_IS_REFERENCED_2') {
+      return res.status(409).json({ msg: '该类型已被教室使用，不能删除' })
+    }
     res.status(500).json({ msg: '服务器错误', error: err.message })
   }
 }

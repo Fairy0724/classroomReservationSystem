@@ -69,7 +69,9 @@
           </el-select>
         </el-form-item>
         <el-form-item label="教室类型" required>
-          <el-input v-model="form.type" placeholder="例如：普通教室/实验教室" />
+          <el-select v-model="form.type" placeholder="请选择教室类型" style="width: 100%">
+            <el-option v-for="item in classroomTypeOptions" :key="item.id" :label="item.typeName" :value="item.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="设备">
           <el-input v-model="form.equipment" placeholder="例如：投影仪,空调,白板" />
@@ -99,6 +101,7 @@ import { ref, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 const classrooms = ref([])
+const classroomTypeOptions = ref([])
 const loading = ref(false)
 const keyword = ref('')
 
@@ -111,7 +114,7 @@ const form = ref({
   deptName: '',
   capacity: 1,
   equipment: '',
-  type: '',
+  type: null,
   status: '可用',
   mainImage: '',
   extraImagesInput: ''
@@ -153,10 +156,25 @@ const resetForm = () => {
     deptName: '',
     capacity: 1,
     equipment: '',
-    type: '',
+    type: null,
     status: '可用',
     mainImage: '',
     extraImagesInput: ''
+  }
+}
+
+const fetchClassroomTypes = async () => {
+  try {
+    const res = await request.get('/classroom-types', {
+      params: {
+        page: 1,
+        pageSize: 1000
+      }
+    })
+    classroomTypeOptions.value = Array.isArray(res?.data) ? res.data : []
+  } catch (error) {
+    classroomTypeOptions.value = []
+    ElMessage.error('获取教室类型失败')
   }
 }
 
@@ -189,7 +207,7 @@ const openEditDialog = (row) => {
     deptName: row.deptName,
     capacity: row.capacity,
     equipment: row.equipment || '',
-    type: row.type || '',
+    type: row.typeId ? Number(row.typeId) : null,
     status: row.status || '可用',
     mainImage: row.mainImage || '',
     extraImagesInput: Array.isArray(row.extraImages) ? row.extraImages.join(',') : ''
@@ -245,6 +263,7 @@ const confirmDelete = async (row) => {
 }
 
 onMounted(() => {
+  fetchClassroomTypes()
   fetchClassrooms()
 })
 </script>

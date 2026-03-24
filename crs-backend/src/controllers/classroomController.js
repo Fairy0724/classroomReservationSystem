@@ -42,6 +42,29 @@ const normalizeEquipment = (value) => {
   return value || ''
 }
 
+// 校验并解析教室类型（外键：classroom.type -> classroom_type.type_id）
+const resolveClassroomTypeId = async (input) => {
+  if (input === undefined || input === null || input === '') {
+    return { ok: false, msg: '教室类型不能为空' }
+  }
+
+  const typeId = Number(input)
+  if (!Number.isInteger(typeId) || typeId <= 0) {
+    return { ok: false, msg: '教室类型必须为有效的类型ID' }
+  }
+
+  const [rows] = await pool.query(
+    'SELECT type_id FROM classroom_type WHERE type_id = ? LIMIT 1',
+    [typeId]
+  )
+
+  if (!rows.length) {
+    return { ok: false, msg: '教室类型不存在' }
+  }
+
+  return { ok: true, typeId }
+}
+
 // 数据库行 -> 前端对象
 const mapRow = (row) => {
   return {
@@ -52,7 +75,8 @@ const mapRow = (row) => {
     deptName: row.dept_name,
     capacity: row.capacity,
     equipment: row.equipment,
-    type: row.type,
+    typeId: row.type,
+    type: row.type_name || '',
     status: row.status,
     createTime: row.create_time,
     updateTime: row.update_time,
@@ -90,7 +114,10 @@ const getClassrooms = async (req, res) => {
   try {
     if (id) {
       const [rows] = await pool.query(
-        'SELECT * FROM classroom WHERE classroom_id = ?',
+        `SELECT c.*, ct.type_name
+         FROM classroom c
+         LEFT JOIN classroom_type ct ON c.type = ct.type_id
+         WHERE c.classroom_id = ?`,
         [id]
       )
       if (!rows.length) {
@@ -99,10 +126,12 @@ const getClassrooms = async (req, res) => {
       return res.json([mapRow(rows[0])])
     }
 
-    let sql = 'SELECT * FROM classroom'
+    let sql = `SELECT c.*, ct.type_name
+               FROM classroom c
+               LEFT JOIN classroom_type ct ON c.type = ct.type_id`
     const params = []
     if (keyword) {
-      sql += ' WHERE building LIKE ? OR room_num LIKE ? OR dept_name LIKE ? OR type LIKE ? OR status LIKE ?'
+      sql += ' WHERE c.building LIKE ? OR c.room_num LIKE ? OR c.dept_name LIKE ? OR ct.type_name LIKE ? OR c.status LIKE ?'
       const key = `%${keyword}%`
       params.push(key, key, key, key, key)
     }
@@ -183,6 +212,11 @@ const createClassroom = async (req, res) => {
       return res.status(400).json({ msg: '楼号/教室编号/所属学院/容量/类型为必填项' })
     }
 
+    const typeResolved = await resolveClassroomTypeId(type)
+    if (!typeResolved.ok) {
+      return res.status(400).json({ msg: typeResolved.msg })
+    }
+
     const extraImagesText = JSON.stringify(parseJsonArray(extraImages))
 
     await pool.query(
@@ -196,7 +230,7 @@ const createClassroom = async (req, res) => {
         deptName,
         Number(capacity),
         normalizeEquipment(equipment),
-        type,
+        typeResolved.typeId,
         status || '可用',
         mainImage || '',
         extraImagesText
@@ -263,8 +297,12 @@ const updateClassroom = async (req, res) => {
       values.push(normalizeEquipment(payload.equipment))
     }
     if (payload.type !== undefined) {
+      const typeResolved = await resolveClassroomTypeId(payload.type)
+      if (!typeResolved.ok) {
+        return res.status(400).json({ msg: typeResolved.msg })
+      }
       fields.push('type = ?')
-      values.push(payload.type)
+      values.push(typeResolved.typeId)
     }
     if (payload.status !== undefined) {
       fields.push('status = ?')

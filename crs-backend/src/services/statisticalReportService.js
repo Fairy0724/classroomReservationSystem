@@ -74,18 +74,20 @@ const buildDashboardData = async () => {
   );
 
   const [typeRows] = await db.pool.query(
-    `SELECT type AS name, COUNT(*) AS value
-     FROM classroom
-     GROUP BY type
+    `SELECT COALESCE(ct.type_name, '未分类') AS name, COUNT(*) AS value
+     FROM classroom c
+     LEFT JOIN classroom_type ct ON c.type = ct.type_id
+     GROUP BY COALESCE(ct.type_name, '未分类')
      ORDER BY value DESC`
   );
 
   const [reservationTypeRows] = await db.pool.query(
-    `SELECT c.type AS name, COUNT(*) AS value
+    `SELECT COALESCE(ct.type_name, '未分类') AS name, COUNT(*) AS value
      FROM reservation r
      LEFT JOIN classroom c ON r.classroom_id = c.classroom_id
+     LEFT JOIN classroom_type ct ON c.type = ct.type_id
      WHERE r.status IN ('待审批','已通过')
-     GROUP BY c.type
+     GROUP BY COALESCE(ct.type_name, '未分类')
      ORDER BY value DESC`
   );
 
