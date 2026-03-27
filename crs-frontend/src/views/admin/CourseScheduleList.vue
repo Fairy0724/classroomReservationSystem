@@ -36,10 +36,6 @@
             </template>
           </el-table-column>
         </el-table>
-
-        <p class="helper-text">
-          数据来自数据库 course_schedule 表，导入请使用模板字段顺序。
-        </p>
       </div>
     </div>
 
@@ -457,12 +453,6 @@ onMounted(() => {
 
 .table {
   width: 100%;
-}
-
-.helper-text {
-  margin-top: 16px;
-  color: #999;
-  font-size: 12px;
 }
 
 .action-btn {

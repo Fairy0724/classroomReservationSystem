@@ -60,8 +60,10 @@
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="form.email" placeholder="可选" />
         </el-form-item>
-        <el-form-item label="院系编码" prop="department">
-          <el-input v-model="form.department" placeholder="如：CS" />
+        <el-form-item label="院系" prop="department">
+          <el-select v-model="form.department" placeholder="请选择院系" clearable style="width: 100%">
+            <el-option v-for="item in departmentOptions" :key="item.code" :label="item.name" :value="item.code" />
+          </el-select>
         </el-form-item>
         <el-form-item label="头像URL" prop="avatar">
           <el-input v-model="form.avatar" placeholder="可选" />
@@ -97,6 +99,7 @@ const loading = ref(false)
 const page = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
+const departmentOptions = ref([])
 
 // ==================== 弹窗表单 ====================
 const dialogVisible = ref(false)
@@ -148,8 +151,30 @@ const fetchList = async () => {
     loading.value = false
   }
 }
+// 确保院系选项存在
+const ensureDepartmentOption = (code, name) => {
+  if (!code) return
+  const existed = departmentOptions.value.some(item => item.code === code)
+  if (!existed) {
+    departmentOptions.value.push({
+      code,
+      name: name || code
+    })
+  }
+}
+// 获取院系列表
+const fetchDepartments = async () => {
+  try {
+    const res = await request.get('/user/admin/departments')
+    departmentOptions.value = Array.isArray(res?.data) ? res.data : []
+  } catch (err) {
+    departmentOptions.value = []
+    ElMessage.error('获取院系列表失败')
+  }
+}
 
 // 初始化加载
+fetchDepartments()
 fetchList()
 
 // ==================== 事件处理 ====================
@@ -186,6 +211,7 @@ const openEdit = (row) => {
   isEdit.value = true
   dialogTitle.value = '编辑教师'
   dialogVisible.value = true
+  ensureDepartmentOption(row.departmentCode || '', row.departmentName || '')
   Object.assign(form, {
     userId: row.userId,
     username: row.username,

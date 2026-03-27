@@ -63,6 +63,23 @@ const mapUserRow = (row) => {
 // 允许的用户角色（用于管理员用户管理）
 const ADMIN_ALLOWED_ROLES = ['teacher', 'student'];
 
+// 可空字段统一：空字符串按 null 入库，避免外键/约束异常
+const normalizeNullable = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  return value;
+};
+
+let userColumnSetCache = null;
+
+const getUserColumnSet = async () => {
+  if (userColumnSetCache) return userColumnSetCache;
+  const [rows] = await pool.query('SHOW COLUMNS FROM user');
+  userColumnSetCache = new Set(rows.map(row => row.Field));
+  return userColumnSetCache;
+};
+
 /**
  * 用户登录
  * @param {*} req 
@@ -285,6 +302,7 @@ exports.adminListUsers = async (req, res) => {
     const { role, keyword } = req.query;
     const page = Number(req.query.page || 1);
     const pageSize = Number(req.query.pageSize || 10);
+    const userColumns = await getUserColumnSet();
 
     if (role && !ADMIN_ALLOWED_ROLES.includes(role)) {
       return res.status(400).json({ msg: '角色参数错误' });
@@ -300,16 +318,14 @@ exports.adminListUsers = async (req, res) => {
     }
 
     if (keyword) {
-      whereClauses.push(`(
-        u.username LIKE ? OR
-        u.real_name LIKE ? OR
-        u.phone LIKE ? OR
-        u.email LIKE ? OR
-        u.student_no LIKE ? OR
-        u.job_no LIKE ?
-      )`);
-      const like = `%${keyword}%`;
-      params.push(like, like, like, like, like, like);
+      const keywordColumns = ['username', 'real_name', 'phone', 'email', 'student_no', 'job_no']
+        .filter(col => userColumns.has(col));
+
+      if (keywordColumns.length) {
+        whereClauses.push(`(${keywordColumns.map(col => `u.${col} LIKE ?`).join(' OR ')})`);
+        const like = `%${keyword}%`;
+        keywordColumns.forEach(() => params.push(like));
+      }
     }
 
     // 总数统计
@@ -335,6 +351,29 @@ exports.adminListUsers = async (req, res) => {
     res.json({
       data: rows.map(mapUserRow),
       pagination: { page, pageSize, total }
+    });
+  } catch (err) {
+    res.status(500).json({ msg: '服务器错误', error: err.message });
+  }
+};
+
+/**
+ * 管理员：获取院系列表（用于下拉框）
+ */
+exports.adminListDepartments = async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT dept_code, dept_name
+       FROM department_dict
+       WHERE is_active = 1
+       ORDER BY sort_order ASC, dept_id ASC`
+    );
+
+    res.json({
+      data: rows.map(row => ({
+        code: row.dept_code,
+        name: row.dept_name
+      }))
     });
   } catch (err) {
     res.status(500).json({ msg: '服务器错误', error: err.message });
@@ -372,23 +411,43 @@ exports.adminCreateUser = async (req, res) => {
       return res.status(409).json({ msg: '用户名已存在' });
     }
 
+    const userColumns = await getUserColumnSet();
+    const insertColumns = ['username', 'password', 'role'];
+    const insertValues = [username, password, role];
+
+    if (userColumns.has('real_name')) {
+      insertColumns.push('real_name');
+      insertValues.push(normalizeNullable(realName));
+    }
+    if (userColumns.has('phone')) {
+      insertColumns.push('phone');
+      insertValues.push(normalizeNullable(phone));
+    }
+    if (userColumns.has('email')) {
+      insertColumns.push('email');
+      insertValues.push(normalizeNullable(email));
+    }
+    if (userColumns.has('department')) {
+      insertColumns.push('department');
+      insertValues.push(normalizeNullable(department));
+    }
+    if (userColumns.has('student_no')) {
+      insertColumns.push('student_no');
+      insertValues.push(normalizeNullable(studentNo));
+    }
+    if (userColumns.has('job_no')) {
+      insertColumns.push('job_no');
+      insertValues.push(normalizeNullable(jobNo));
+    }
+    if (userColumns.has('avatar')) {
+      insertColumns.push('avatar');
+      insertValues.push(normalizeNullable(avatar));
+    }
+
     const [result] = await pool.query(
-      `INSERT INTO user
-        (username, password, role, real_name, phone, email, department, student_no, job_no, avatar)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ,
-      [
-        username,
-        password,
-        role,
-        realName || null,
-        phone || null,
-        email || null,
-        department || null,
-        studentNo || null,
-        jobNo || null,
-        avatar || null
-      ]
+      `INSERT INTO user (${insertColumns.join(', ')})
+       VALUES (${insertColumns.map(() => '?').join(', ')})`,
+      insertValues
     );
 
     const [rows] = await pool.query(
@@ -427,6 +486,8 @@ exports.adminUpdateUser = async (req, res) => {
       return res.status(404).json({ msg: '用户不存在' });
     }
 
+    const userColumns = await getUserColumnSet();
+
     // 不允许修改管理员账号
     if (rows[0].role === 'admin') {
       return res.status(400).json({ msg: '不允许修改管理员账号' });
@@ -443,6 +504,13 @@ exports.adminUpdateUser = async (req, res) => {
     const fields = [];
     const values = [];
 
+    const normalizedPhone = normalizeNullable(phone);
+    const normalizedEmail = normalizeNullable(email);
+    const normalizedDepartment = normalizeNullable(department);
+    const normalizedStudentNo = normalizeNullable(studentNo);
+    const normalizedJobNo = normalizeNullable(jobNo);
+    const normalizedAvatar = normalizeNullable(avatar);
+
     if (username !== undefined) {
       fields.push('username = ?');
       values.push(username);
@@ -452,28 +520,40 @@ exports.adminUpdateUser = async (req, res) => {
       values.push(realName);
     }
     if (phone !== undefined) {
-      fields.push('phone = ?');
-      values.push(phone);
+      if (userColumns.has('phone')) {
+        fields.push('phone = ?');
+        values.push(normalizedPhone);
+      }
     }
     if (email !== undefined) {
-      fields.push('email = ?');
-      values.push(email);
+      if (userColumns.has('email')) {
+        fields.push('email = ?');
+        values.push(normalizedEmail);
+      }
     }
     if (department !== undefined) {
-      fields.push('department = ?');
-      values.push(department);
+      if (userColumns.has('department')) {
+        fields.push('department = ?');
+        values.push(normalizedDepartment);
+      }
     }
     if (studentNo !== undefined) {
-      fields.push('student_no = ?');
-      values.push(studentNo);
+      if (userColumns.has('student_no')) {
+        fields.push('student_no = ?');
+        values.push(normalizedStudentNo);
+      }
     }
     if (jobNo !== undefined) {
-      fields.push('job_no = ?');
-      values.push(jobNo);
+      if (userColumns.has('job_no')) {
+        fields.push('job_no = ?');
+        values.push(normalizedJobNo);
+      }
     }
     if (avatar !== undefined) {
-      fields.push('avatar = ?');
-      values.push(avatar);
+      if (userColumns.has('avatar')) {
+        fields.push('avatar = ?');
+        values.push(normalizedAvatar);
+      }
     }
 
     if (!fields.length) {
@@ -493,6 +573,12 @@ exports.adminUpdateUser = async (req, res) => {
 
     res.json({ msg: '更新成功', data: mapUserRow(updatedRows[0]) });
   } catch (err) {
+    if (err.code === 'ER_NO_REFERENCED_ROW_2' && String(err.message).includes('department')) {
+      return res.status(400).json({ msg: '院系编码不存在，请填写有效的院系编码' });
+    }
+    if (err.code === 'ER_BAD_FIELD_ERROR') {
+      return res.status(400).json({ msg: '数据库字段与代码不匹配，请检查 user 表字段配置' });
+    }
     res.status(500).json({ msg: '服务器错误', error: err.message });
   }
 };

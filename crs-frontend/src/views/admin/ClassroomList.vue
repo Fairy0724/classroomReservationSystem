@@ -37,10 +37,6 @@
             </template>
           </el-table-column>
         </el-table>
-
-        <p class="helper-text">
-          数据来自数据库 classroom 表。
-        </p>
       </div>
     </div>
 
@@ -300,12 +296,6 @@ onMounted(() => {
 
 .table {
   width: 100%;
-}
-
-.helper-text {
-  margin-top: 16px;
-  color: #999;
-  font-size: 12px;
 }
 
 .thumb {

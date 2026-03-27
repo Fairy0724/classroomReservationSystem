@@ -24,6 +24,8 @@ router.get('/info', userController.getUserInfo);
 // ==================== 管理员用户管理 ====================
 // 列表查询（教师/学生）
 router.get('/admin/users', auth, requireAdmin, userController.adminListUsers);
+// 院系列表（下拉）
+router.get('/admin/departments', auth, requireAdmin, userController.adminListDepartments);
 // 创建用户（教师/学生）
 router.post('/admin/users', auth, requireAdmin, userController.adminCreateUser);
 // 更新用户（教师/学生）
