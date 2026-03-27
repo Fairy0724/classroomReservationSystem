@@ -23,7 +23,8 @@ const getDashboardReportKey = () => {
 };
 
 // 保存报表（类似 upsert）：同一键已存在则覆盖
-const saveReport = async (reportKey, data) => {
+// adminId 仅用于“管理员手动触发写入”的场景，定时任务不传
+const saveReport = async (reportKey, data, adminId = null) => {
   const [existing] = await db.pool.query(
     `SELECT report_id FROM statistical_report
      WHERE report_type = ? AND period = ? AND dimension = ?
@@ -39,24 +40,72 @@ const saveReport = async (reportKey, data) => {
   );
 
   if (existing.length) {
+    if (adminId !== null && adminId !== undefined) {
+      await db.pool.query(
+        `UPDATE statistical_report
+         SET data = ?, generated_at = NOW(), admin_id = ?
+         WHERE report_id = ?`,
+        [JSON.stringify(data), adminId, existing[0].report_id]
+      );
+    } else {
+      await db.pool.query(
+        `UPDATE statistical_report
+         SET data = ?, generated_at = NOW()
+         WHERE report_id = ?`,
+        [JSON.stringify(data), existing[0].report_id]
+      );
+    }
+    return;
+  }
+
+  if (adminId !== null && adminId !== undefined) {
     await db.pool.query(
-      `UPDATE statistical_report
-       SET data = ?, generated_at = NOW()
-       WHERE report_id = ?`,
-      [JSON.stringify(data), existing[0].report_id]
+      `INSERT INTO statistical_report
+       (report_type, period, dimension, data, start_date, end_date, generated_at, admin_id)
+       VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)`,
+      [
+        reportKey.reportType,
+        reportKey.period,
+        reportKey.dimension,
+        JSON.stringify(data),
+        reportKey.startDate,
+        reportKey.endDate,
+        adminId
+      ]
     );
+  } else {
+    await db.pool.query(
+      `INSERT INTO statistical_report
+       (report_type, period, dimension, data, start_date, end_date, generated_at)
+       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        reportKey.reportType,
+        reportKey.period,
+        reportKey.dimension,
+        JSON.stringify(data),
+        reportKey.startDate,
+        reportKey.endDate
+      ]
+    );
+  }
+};
+
+// 仅刷新报表的管理员操作人，不修改统计数据与生成时间
+const refreshReportAdminId = async (reportKey, adminId) => {
+  if (adminId === null || adminId === undefined) {
     return;
   }
 
   await db.pool.query(
-    `INSERT INTO statistical_report
-     (report_type, period, dimension, data, start_date, end_date, generated_at)
-     VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+    `UPDATE statistical_report
+     SET admin_id = ?
+     WHERE report_type = ? AND period = ? AND dimension = ?
+       AND start_date = ? AND end_date = ?`,
     [
+      adminId,
       reportKey.reportType,
       reportKey.period,
       reportKey.dimension,
-      JSON.stringify(data),
       reportKey.startDate,
       reportKey.endDate
     ]
@@ -148,5 +197,6 @@ module.exports = {
   buildDashboardData,
   getDashboardReportKey,
   formatDate,
-  saveReport
+  saveReport,
+  refreshReportAdminId
 };
