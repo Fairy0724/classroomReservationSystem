@@ -658,7 +658,7 @@ ul {
 }
 
 .footer-logo .slogan {
-  font-size: 18px;
+  font-size: 24px;
   color: var(--text-light);
 }
 
