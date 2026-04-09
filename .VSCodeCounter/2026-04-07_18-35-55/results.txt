@@ -1,0 +1,132 @@
+Date : 2026-04-07 18:35:55
+Directory : d:\projects\classroomReservationSystem
+Total : 76 files,  18681 codes, 1296 comments, 2020 blanks, all 21997 lines
+
+Languages
++------------+------------+------------+------------+------------+------------+
+| language   | files      | code       | comment    | blank      | total      |
++------------+------------+------------+------------+------------+------------+
+| Vue        |         31 |      9,698 |        848 |      1,445 |     11,991 |
+| JSON       |          4 |      5,463 |          0 |          4 |      5,467 |
+| JavaScript |         35 |      3,158 |        416 |        507 |      4,081 |
+| PostCSS    |          2 |        343 |         32 |         58 |        433 |
+| HTML       |          1 |         14 |          0 |          3 |         17 |
+| Markdown   |          1 |          3 |          0 |          3 |          6 |
+| XML        |          2 |          2 |          0 |          0 |          2 |
++------------+------------+------------+------------+------------+------------+
+
+Directories
++------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                           | files      | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                              |         76 |     18,681 |      1,296 |      2,020 |     21,997 |
+| crs-backend                                                                                    |         31 |      4,580 |        362 |        487 |      5,429 |
+| crs-backend (Files)                                                                            |          3 |      1,775 |         13 |         16 |      1,804 |
+| crs-backend\src                                                                                |         28 |      2,805 |        349 |        471 |      3,625 |
+| crs-backend\src\config                                                                         |          1 |         12 |          6 |          0 |         18 |
+| crs-backend\src\controllers                                                                    |         10 |      2,299 |        235 |        353 |      2,887 |
+| crs-backend\src\db                                                                             |          1 |         30 |         12 |          5 |         47 |
+| crs-backend\src\jobs                                                                           |          2 |         95 |         10 |         20 |        125 |
+| crs-backend\src\middlewares                                                                    |          2 |         22 |         10 |          5 |         37 |
+| crs-backend\src\routes                                                                         |         10 |        108 |         55 |         56 |        219 |
+| crs-backend\src\services                                                                       |          1 |        175 |         10 |         18 |        203 |
+| crs-backend\src\ws                                                                             |          1 |         64 |         11 |         14 |         89 |
+| crs-frontend                                                                                   |         45 |     14,101 |        934 |      1,533 |     16,568 |
+| crs-frontend (Files)                                                                           |          5 |      3,744 |          8 |         10 |      3,762 |
+| crs-frontend\public                                                                            |          1 |          1 |          0 |          0 |          1 |
+| crs-frontend\src                                                                               |         39 |     10,356 |        926 |      1,523 |     12,805 |
+| crs-frontend\src (Files)                                                                       |          4 |        363 |         32 |         63 |        458 |
+| crs-frontend\src\assets                                                                        |          1 |          1 |          0 |          0 |          1 |
+| crs-frontend\src\components                                                                    |          7 |      1,504 |        128 |        194 |      1,826 |
+| crs-frontend\src\routes                                                                        |          1 |        221 |         36 |          8 |        265 |
+| crs-frontend\src\stores                                                                        |          2 |         59 |          6 |          5 |         70 |
+| crs-frontend\src\utils                                                                         |          1 |         22 |          4 |          4 |         30 |
+| crs-frontend\src\views                                                                         |         23 |      8,186 |        720 |      1,249 |     10,155 |
+| crs-frontend\src\views (Files)                                                                 |          3 |        654 |         53 |        112 |        819 |
+| crs-frontend\src\views\admin                                                                   |          8 |      2,080 |        143 |        259 |      2,482 |
+| crs-frontend\src\views\teacher                                                                 |          2 |        654 |         42 |        105 |        801 |
+| crs-frontend\src\views\user                                                                    |         10 |      4,798 |        482 |        773 |      6,053 |
++------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| filename                                                                                       | language   | code       | comment    | blank      | total      |
++------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| d:\projects\classroomReservationSystem\crs-backend\app.js                                      | JavaScript |         20 |         13 |         14 |         47 |
+| d:\projects\classroomReservationSystem\crs-backend\package-lock.json                           | JSON       |      1,728 |          0 |          1 |      1,729 |
+| d:\projects\classroomReservationSystem\crs-backend\package.json                                | JSON       |         27 |          0 |          1 |         28 |
+| d:\projects\classroomReservationSystem\crs-backend\src\config\config.js                        | JavaScript |         12 |          6 |          0 |         18 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\adminDashboardController.js | JavaScript |         45 |         10 |          6 |         61 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\announcementController.js   | JavaScript |        274 |         11 |         52 |        337 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\approvalController.js       | JavaScript |        244 |         29 |         33 |        306 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\classroomController.js      | JavaScript |        321 |         30 |         47 |        398 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\classroomTypeController.js  | JavaScript |        132 |         21 |         21 |        174 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\courseScheduleController.js | JavaScript |        215 |         23 |         30 |        268 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\messageController.js        | JavaScript |        246 |          0 |         46 |        292 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\periodController.js         | JavaScript |          9 |          3 |          2 |         14 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\reservationController.js    | JavaScript |        313 |         46 |         44 |        403 |
+| d:\projects\classroomReservationSystem\crs-backend\src\controllers\userController.js           | JavaScript |        500 |         62 |         72 |        634 |
+| d:\projects\classroomReservationSystem\crs-backend\src\db\db.js                                | JavaScript |         30 |         12 |          5 |         47 |
+| d:\projects\classroomReservationSystem\crs-backend\src\jobs\activityReminder.js                | JavaScript |         61 |          4 |         12 |         77 |
+| d:\projects\classroomReservationSystem\crs-backend\src\jobs\statisticalReport.js               | JavaScript |         34 |          6 |          8 |         48 |
+| d:\projects\classroomReservationSystem\crs-backend\src\middlewares\admin.js                    | JavaScript |          6 |          4 |          1 |         11 |
+| d:\projects\classroomReservationSystem\crs-backend\src\middlewares\auth.js                     | JavaScript |         16 |          6 |          4 |         26 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\adminDashboard.js                | JavaScript |          7 |          1 |          3 |         11 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\announcement.js                  | JavaScript |         12 |          6 |          4 |         22 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\approval.js                      | JavaScript |         10 |          5 |          7 |         22 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\classroom.js                     | JavaScript |         11 |          5 |          7 |         23 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\classroomType.js                 | JavaScript |         10 |          4 |          6 |         20 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\courseSchedule.js                | JavaScript |         11 |          5 |          7 |         23 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\message.js                       | JavaScript |         14 |         10 |          3 |         27 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\period.js                        | JavaScript |          5 |          1 |          3 |          9 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\reservation.js                   | JavaScript |         10 |          5 |          7 |         22 |
+| d:\projects\classroomReservationSystem\crs-backend\src\routes\user.js                          | JavaScript |         18 |         13 |          9 |         40 |
+| d:\projects\classroomReservationSystem\crs-backend\src\services\statisticalReportService.js    | JavaScript |        175 |         10 |         18 |        203 |
+| d:\projects\classroomReservationSystem\crs-backend\src\ws\wsHub.js                             | JavaScript |         64 |         11 |         14 |         89 |
+| d:\projects\classroomReservationSystem\crs-frontend\README.md                                  | Markdown   |          3 |          0 |          3 |          6 |
+| d:\projects\classroomReservationSystem\crs-frontend\index.html                                 | HTML       |         14 |          0 |          3 |         17 |
+| d:\projects\classroomReservationSystem\crs-frontend\package-lock.json                          | JSON       |      3,680 |          0 |          1 |      3,681 |
+| d:\projects\classroomReservationSystem\crs-frontend\package.json                               | JSON       |         28 |          0 |          1 |         29 |
+| d:\projects\classroomReservationSystem\crs-frontend\public\vite.svg                            | XML        |          1 |          0 |          0 |          1 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\App.vue                                | Vue        |          8 |          0 |          2 |         10 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\assets\vue.svg                         | XML        |          1 |          0 |          0 |          1 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\base.css                               | PostCSS    |         71 |          2 |         13 |         86 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\components\AdminDashboardCharts.vue    | Vue        |        345 |         21 |         42 |        408 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\components\AdminLayout.vue             | Vue        |        198 |         14 |         22 |        234 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\components\AppFooter.vue               | Vue        |        130 |         14 |         20 |        164 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\components\AppPagination.vue           | Vue        |         61 |         16 |         11 |         88 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\components\ApprovalHistoryChart.vue    | Vue        |        413 |         45 |         49 |        507 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\components\Layout.vue                  | Vue        |         72 |          5 |         13 |         90 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\components\NavBar.vue                  | Vue        |        285 |         13 |         37 |        335 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\main.js                                | JavaScript |         12 |          0 |          3 |         15 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\routes\index.js                        | JavaScript |        221 |         36 |          8 |        265 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\stores\pinia.js                        | JavaScript |          3 |          1 |          3 |          7 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\stores\userStore.js                    | JavaScript |         56 |          5 |          2 |         63 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\style.css                              | PostCSS    |        272 |         30 |         45 |        347 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\utils\request.js                       | JavaScript |         22 |          4 |          4 |         30 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\Login.vue                        | Vue        |        620 |         49 |        106 |        775 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\Placeholder.vue                  | Vue        |         31 |          4 |          6 |         41 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\Test.vue                         | Vue        |          3 |          0 |          0 |          3 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\Admin.vue                  | Vue        |        186 |         25 |         29 |        240 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\AdminProfile.vue           | Vue        |        109 |         18 |         12 |        139 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\ClassroomList.vue          | Vue        |        293 |         11 |         30 |        334 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\ClassroomTypeList.vue      | Vue        |        204 |         18 |         31 |        253 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\CourseScheduleList.vue     | Vue        |        414 |         17 |         56 |        487 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\NoticeList.vue             | Vue        |        290 |          5 |         35 |        330 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\StudentList.vue            | Vue        |        292 |         25 |         33 |        350 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\admin\TeacherList.vue            | Vue        |        292 |         24 |         33 |        349 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\teacher\Approval.vue             | Vue        |        472 |         30 |         77 |        579 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\teacher\ApprovalDetail.vue       | Vue        |        182 |         12 |         28 |        222 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\Classroom.vue               | Vue        |        266 |         25 |         45 |        336 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\ClassroomDetail.vue         | Vue        |        857 |        102 |        135 |      1,094 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\Home.vue                    | Vue        |        853 |        188 |        148 |      1,189 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\MessageCenter.vue           | Vue        |        369 |         10 |         54 |        433 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\MessageDetail.vue           | Vue        |        192 |          2 |         30 |        224 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\MyReservations.vue          | Vue        |        494 |         35 |         84 |        613 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\NoticeDetail.vue            | Vue        |        149 |          4 |         26 |        179 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\NoticeList.vue              | Vue        |        270 |          7 |         43 |        320 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\Profile.vue                 | Vue        |        920 |         60 |        139 |      1,119 |
+| d:\projects\classroomReservationSystem\crs-frontend\src\views\user\Reservation.vue             | Vue        |        428 |         49 |         69 |        546 |
+| d:\projects\classroomReservationSystem\crs-frontend\vite.config.js                             | JavaScript |         19 |          8 |          2 |         29 |
+| Total                                                                                          |            |     18,681 |      1,296 |      2,020 |     21,997 |
++------------------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+

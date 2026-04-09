@@ -92,6 +92,7 @@
             <div class="card-actions">
               <el-button type="primary" @click="goToClassrooms">去预约</el-button>
               <el-button @click="goToMyReservations">查看全部</el-button>
+              <el-button @click="exportReservationsInProfile">导出预约</el-button>
             </div>
           </div>
 
@@ -215,6 +216,7 @@ import { useUserStore } from '@/stores/userStore';
 import request from '@/utils/request';
 import { ElMessage } from 'element-plus';
 import logoUrl from '@/assets/images/logo.png';
+import { exportReservationsCsv } from '@/utils/reservationExport';
 
 // 路由与用户状态
 const router = useRouter();
@@ -298,6 +300,27 @@ const formatDate = (date) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+// 解析节次数组（兼容数组 / JSON字符串）
+const parsePeriodIds = (value) => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+// 格式化节次文本（与“我的预约页”的“节次”字段一致）
+const formatPeriodsText = (periodIds) => {
+  const ids = parsePeriodIds(periodIds);
+  if (!ids.length) return '—';
+  return ids.map(id => `第${id}节`).join('，');
+};
+
 // 预约状态映射
 const formatStatus = (status) => {
   if (status === 'pending') return '待审批';
@@ -312,12 +335,21 @@ const fetchReservations = async () => {
     const res = await request.get('/reservations/my');
     const list = Array.isArray(res?.data) ? res.data : [];
 
+    // 组装时段文案：优先显示“开始-结束”，无时间时回退“第N节”
+    const formatTimeText = (item) => {
+      if (item.start_time && item.end_time) {
+        return `${String(item.start_time).slice(0, 5)}-${String(item.end_time).slice(0, 5)}`;
+      }
+      return formatPeriodsText(item.period_ids);
+    };
+
     const mapped = await Promise.all(
       list.map(async (item) => {
         let classroom = null;
         try {
           const classroomRes = await request.get('/classrooms', {
-            params: { id: item.classroomId }
+            // 兼容后端字段 classroom_id
+            params: { id: item.classroomId ?? item.classroom_id }
           });
           classroom = Array.isArray(classroomRes) ? classroomRes[0] : classroomRes;
         } catch (error) {
@@ -326,20 +358,31 @@ const fetchReservations = async () => {
 
         const classroomName = classroom
           ? `${classroom.building || ''}${classroom.roomNum || ''}`
-          : `教室 ${item.classroomId}`;
+          : `教室 ${item.classroomId ?? item.classroom_id ?? ''}`;
         const location = classroom
           ? `${classroom.building || ''}-${classroom.floor || ''}层`
           : '未知';
 
         return {
-          id: item.id,
-          classroomId: item.classroomId,
+          // 关键修复：后端主键是 reservation_id，不是 id
+          id: item.id ?? item.reservation_id,
+          // 导出专用：与“我的预约页”字段名对齐
+          reservationId: item.id ?? item.reservation_id,
+          classroomId: item.classroomId ?? item.classroom_id,
           classroomName,
           location,
           date: item.date,
-          time: Array.isArray(item.timeSlots) ? item.timeSlots.join('、') : item.timeSlots,
+          reservationDate: item.date,
+          startTime: String(item.start_time || '').slice(0, 8),
+          endTime: String(item.end_time || '').slice(0, 8),
+          periods: formatPeriodsText(item.period_ids),
+          activityName: item.activityName || item.activity_name || '',
+          activityType: item.activityType || item.activity_type || '',
+          participantCount: item.participantCount ?? item.participant_count ?? '',
+          submittedAt: item.submittedAt || item.submitted_at,
+          time: formatTimeText(item),
           status: formatStatus(item.status),
-          purpose: item.purpose || item.activityName || '—'
+          purpose: item.purpose || item.activityName || item.activity_name || '—'
         };
       })
     );
@@ -362,6 +405,21 @@ const statusClass = (status) => {
   if (status === '已通过') return 'status-approved';
   if (status === '已驳回') return 'status-rejected';
   return 'status-default';
+};
+
+// 个人中心“我的预约”导出
+const exportReservationsInProfile = () => {
+  // 个人中心数据已在 fetchReservations 中对齐为导出所需字段
+  const exportedCount = exportReservationsCsv(reservationList.value, {
+    filenamePrefix: '我的预约_个人中心'
+  });
+
+  if (!exportedCount) {
+    ElMessage.warning('当前没有可导出的预约记录');
+    return;
+  }
+
+  ElMessage.success(`已导出 ${exportedCount} 条预约记录`);
 };
 
 // 编辑模式切换：进入时填表，退出时保存

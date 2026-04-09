@@ -38,6 +38,7 @@
 
         <button class="reset-btn" @click="resetFilters">清空筛选</button>
         <button class="btn" @click="fetchData">刷新</button>
+        <button class="btn" @click="exportReservations">导出预约</button>
       </div>
 
       <div v-if="loading" class="state">加载中...</div>
@@ -107,12 +108,12 @@
         <div v-else-if="detailError" class="state error">{{ detailError }}</div>
         <div v-else-if="detail" class="detail-body">
           <div class="row"><span class="label">教室</span><span class="value">{{ getClassroomName(detail.classroom_id)
-          }}</span></div>
+              }}</span></div>
           <div class="row"><span class="label">日期</span><span class="value">{{ formatDate(detail.date) }}</span></div>
           <div class="row"><span class="label">时间</span><span class="value">{{ detail.start_time }} - {{ detail.end_time
-          }}</span></div>
+              }}</span></div>
           <div class="row"><span class="label">节次</span><span class="value">{{ formatPeriods(detail.period_ids)
-          }}</span>
+              }}</span>
           </div>
           <div class="row"><span class="label">活动名称</span><span class="value">{{ detail.activity_name }}</span></div>
           <div class="row"><span class="label">活动类型</span><span class="value">{{ detail.activity_type }}</span></div>
@@ -121,7 +122,7 @@
           <div class="row"><span class="label">用途说明</span><span class="value">{{ detail.purpose || '—' }}</span></div>
           <div class="row"><span class="label">状态</span><span class="value">{{ detail.status }}</span></div>
           <div class="row"><span class="label">提交时间</span><span class="value">{{ formatDateTime(detail.submitted_at)
-          }}</span></div>
+              }}</span></div>
         </div>
         <div class="detail-actions">
           <button class="btn" @click="detailVisible = false">关闭</button>
@@ -148,6 +149,7 @@ import NavBar from '@/components/NavBar.vue'
 import AppPagination from '@/components/AppPagination.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
+import { exportReservationsCsv } from '@/utils/reservationExport'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -337,6 +339,33 @@ const resetFilters = () => {
 
 const handleSearch = () => {
   // 搜索跳转由 NavBar 统一处理
+}
+
+// 导出当前筛选后的预约记录
+const exportReservations = () => {
+  // 先补齐导出所需的统一字段，再交给公共导出模块处理
+  const rows = filteredReservations.value.map(item => ({
+    reservationId: item.reservation_id,
+    classroomName: getClassroomName(item.classroom_id),
+    reservationDate: item.date,
+    startTime: item.start_time,
+    endTime: item.end_time,
+    periods: formatPeriods(item.period_ids),
+    activityName: item.activity_name,
+    activityType: item.activity_type,
+    participantCount: item.participant_count,
+    purpose: item.purpose,
+    status: item.status,
+    submittedAt: item.submitted_at
+  }))
+
+  const exportedCount = exportReservationsCsv(rows, { filenamePrefix: '我的预约' })
+  if (!exportedCount) {
+    ElMessage.warning('当前没有可导出的预约记录')
+    return
+  }
+
+  ElMessage.success(`已导出 ${exportedCount} 条预约记录`)
 }
 
 
