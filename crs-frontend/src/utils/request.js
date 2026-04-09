@@ -21,7 +21,9 @@ service.interceptors.response.use(
     // 登录页会自行处理提示，避免重复弹窗
     const requestUrl = err.config?.url || ''
     if (!requestUrl.includes('/user/login')) {
-      ElMessage.error(err.response?.data?.msg || '请求失败')
+      const backendMsg = err.response?.data?.msg
+      const backendError = err.response?.data?.error
+      ElMessage.error(backendMsg || backendError || '请求失败')
     }
     return Promise.reject(err)
   }

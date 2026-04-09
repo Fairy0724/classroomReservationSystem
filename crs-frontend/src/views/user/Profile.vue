@@ -12,7 +12,7 @@
           <div class="avatar-wrapper">
             <img :src="userStore.userInfo?.avatar || logoUrl" :alt="userStore.userInfo?.username"
               referrerpolicy="no-referrer" @error="handleAvatarError">
-            <label class="upload-avatar" title="更换头像">
+            <label v-if="!isTeacherOrStudent" class="upload-avatar" title="更换头像">
               <input type="file" accept="image/*" style="display:none" @change="handleAvatarChange" />
               <i class="el-icon-camera"></i>
             </label>
@@ -40,10 +40,9 @@
         <div v-if="currentMenu === 'basic'" class="content-card">
           <div class="card-header">
             <h2>基本信息</h2>
-            <!-- <el-button type="primary" @click="editMode = !editMode">
-              {{ editMode ? '保存' : '编辑' }}
-            </el-button> -->
-            <!-- 仅展示，不支持编辑 -->
+            <el-button type="primary" @click="openBasicEditDialog">
+              修改信息
+            </el-button>
           </div>
           <div class="info-list">
             <div class="info-item">
@@ -190,6 +189,37 @@
       </template>
     </el-dialog>
 
+    <!-- 基本信息修改弹窗（仅手机号和邮箱可编辑） -->
+    <el-dialog title="修改个人信息" v-model="basicEditDialogVisible" width="420px">
+      <el-form :model="basicForm" :rules="basicRules" ref="basicFormRef" label-width="90px">
+        <!-- 仅展示，不允许修改 -->
+        <el-form-item label="姓名">
+          <el-input :model-value="userStore.userInfo?.realName || ''" disabled />
+        </el-form-item>
+        <el-form-item :label="roleLabel === '学生' ? '学号' : '工号'">
+          <el-input :model-value="userStore.userInfo?.username || ''" disabled />
+        </el-form-item>
+        <el-form-item label="身份">
+          <el-input :model-value="roleLabel" disabled />
+        </el-form-item>
+        <el-form-item label="学院">
+          <el-input :model-value="userStore.userInfo?.department || ''" disabled />
+        </el-form-item>
+
+        <!-- 以下两项允许修改 -->
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="basicForm.phone" placeholder="请输入手机号" />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="basicForm.email" placeholder="请输入邮箱" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="basicEditDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saveBasicLoading" @click="handleSaveBasicEdit">保存</el-button>
+      </template>
+    </el-dialog>
+
     <!-- 修改手机号弹窗 -->
     <el-dialog title="修改手机号" v-model="showPhoneDialog" width="400px">
       <el-form :model="phoneForm" :rules="phoneRules" ref="phoneFormRef" label-width="90px">
@@ -222,19 +252,57 @@ import { exportReservationsCsv } from '@/utils/reservationExport';
 const router = useRouter();
 const userStore = useUserStore();
 const isLogin = computed(() => !!userStore.token);
+const isTeacherOrStudent = computed(() => ['teacher', 'student'].includes(userStore.userInfo?.role));
 
 // 当前菜单与编辑状态
 const currentMenu = ref('basic');
-const editMode = ref(false);
+const saveBasicLoading = ref(false);
+const basicEditDialogVisible = ref(false);
+const originalBasicContact = ref({ phone: '', email: '' });
 
-// 用户编辑表单（仅用于前端展示/编辑）
-const userForm = ref({
-  username: '',
-  realName: '',
+// 基本信息弹窗表单（仅手机号和邮箱可编辑）
+const basicForm = ref({
   phone: '',
-  email: '',
-  department: ''
+  email: ''
 });
+const basicFormRef = ref();
+const basicRules = {
+  phone: [
+    {
+      validator: (rule, value, callback) => {
+        const text = String(value || '').trim();
+        if (!text) {
+          callback();
+          return;
+        }
+        if (!/^\d{11}$/.test(text)) {
+          callback(new Error('手机号必须为11位数字'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'blur'
+    }
+  ],
+  email: [
+    {
+      validator: (rule, value, callback) => {
+        const text = String(value || '').trim();
+        if (!text) {
+          callback();
+          return;
+        }
+        // 按需求放宽：只要包含 @ 就视为有效
+        if (!text.includes('@')) {
+          callback(new Error('邮箱需包含@'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'blur'
+    }
+  ]
+};
 
 // 顶部搜索（按教室关键字筛选）
 const searchQuery = ref('');
@@ -422,37 +490,55 @@ const exportReservationsInProfile = () => {
   ElMessage.success(`已导出 ${exportedCount} 条预约记录`);
 };
 
-// 编辑模式切换：进入时填表，退出时保存
-watch(editMode, (newValue) => {
-  if (newValue) {
-    userForm.value = {
-      username: userStore.userInfo?.username || '',
-      realName: userStore.userInfo?.realName || '',
-      phone: userStore.userInfo?.phone || '',
-      email: userStore.userInfo?.email || '',
-      department: userStore.userInfo?.department || ''
-    };
-  } else {
-    saveUserInfo();
-  }
-});
+// 打开“修改信息”弹窗，并回填当前资料
+const openBasicEditDialog = () => {
+  const currentPhone = userStore.userInfo?.phone || '';
+  const currentEmail = userStore.userInfo?.email || '';
+  basicForm.value.phone = currentPhone;
+  basicForm.value.email = currentEmail;
+  originalBasicContact.value = {
+    phone: currentPhone,
+    email: currentEmail
+  };
+  basicEditDialogVisible.value = true;
+};
 
-// 保存用户信息（接入后端）
-const saveUserInfo = async () => {
+// 保存弹窗中的手机号和邮箱
+const handleSaveBasicEdit = async () => {
   try {
-    if (!userStore.userInfo) return;
-    const payload = {
-      username: userForm.value.username,
-      realName: userForm.value.realName,
-      phone: userForm.value.phone,
-      email: userForm.value.email,
-      department: userForm.value.department
-    };
+    await basicFormRef.value?.validate();
+  } catch {
+    ElMessage.warning('请先修正表单校验错误后再保存');
+    return;
+  }
+
+  const phone = String(basicForm.value.phone || '').trim();
+  const email = String(basicForm.value.email || '').trim();
+
+  // 仅提交有变化的字段：支持“只改一项”
+  const payload = {};
+  if (phone !== String(originalBasicContact.value.phone || '').trim()) {
+    payload.phone = phone;
+  }
+  if (email !== String(originalBasicContact.value.email || '').trim()) {
+    payload.email = email;
+  }
+
+  if (!Object.keys(payload).length) {
+    ElMessage.info('没有检测到变更');
+    return;
+  }
+
+  saveBasicLoading.value = true;
+  try {
     await userStore.updateProfile(payload);
+    basicEditDialogVisible.value = false;
     ElMessage.success('保存成功');
   } catch (error) {
-    ElMessage.error('保存失败');
-    editMode.value = true;
+    const backendMsg = error?.response?.data?.msg;
+    ElMessage.error(backendMsg || '保存失败');
+  } finally {
+    saveBasicLoading.value = false;
   }
 };
 
@@ -521,6 +607,11 @@ const handleAvatarError = (event) => {
 
 // 头像上传处理（接入后端）
 const handleAvatarChange = async (e) => {
+  if (isTeacherOrStudent.value) {
+    ElMessage.warning('教师和学生仅可修改手机号和邮箱');
+    return;
+  }
+
   const file = e.target.files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) {
@@ -546,16 +637,18 @@ const handleAvatarChange = async (e) => {
 onMounted(async () => {
   if (isLogin.value) {
     await userStore.fetchProfile();
-    userForm.value = {
-      username: userStore.userInfo?.username || '',
-      realName: userStore.userInfo?.realName || '',
-      phone: userStore.userInfo?.phone || '',
-      email: userStore.userInfo?.email || '',
-      department: userStore.userInfo?.department || ''
-    };
+    basicForm.value.phone = userStore.userInfo?.phone || '';
+    basicForm.value.email = userStore.userInfo?.email || '';
     fetchReservations();
   }
 });
+
+// 当用户信息刷新时，同步回填手机号和邮箱到编辑框
+watch(() => userStore.userInfo, (info) => {
+  if (!info) return;
+  basicForm.value.phone = info.phone || '';
+  basicForm.value.email = info.email || '';
+}, { deep: true });
 </script>
 
 <style scoped>
@@ -872,16 +965,16 @@ onMounted(async () => {
   flex: 1;
 }
 
-:deep(.el-input__inner) {
+/* Element Plus 新版本边框由 wrapper 绘制，统一在 wrapper 上设置可避免双层边框 */
+:deep(.el-input__wrapper) {
   background: #ffffff;
-  border-color: #e8f3e8;
+  box-shadow: 0 0 0 1px #e8f3e8 inset;
   border-radius: 8px;
-  height: 40px;
+  min-height: 40px;
 }
 
-:deep(.el-input__inner:focus) {
-  border-color: #2ecc71;
-  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+:deep(.el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #2ecc71 inset, 0 0 0 2px rgba(46, 204, 113, 0.2);
 }
 
 :deep(.el-button--primary) {

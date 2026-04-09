@@ -171,6 +171,7 @@ exports.getUserInfo = async (req, res) => {
 exports.updateUserInfo = async (req, res) => {
   try {
     const userId = req.user.user_id;
+    const role = req.user.role;
     const {
       username,
       realName,
@@ -184,33 +185,93 @@ exports.updateUserInfo = async (req, res) => {
     const fields = [];
     const values = [];
 
-    if (username !== undefined) {
-      fields.push('username = ?');
-      values.push(username);
-    }
-    if (realName !== undefined) {
-      fields.push('real_name = ?');
-      values.push(realName);
-    }
-    if (phone !== undefined) {
-      fields.push('phone = ?');
-      values.push(phone);
-    }
-    if (email !== undefined) {
-      fields.push('email = ?');
-      values.push(email);
-    }
-    if (department !== undefined) {
-      fields.push('department = ?');
-      values.push(department);
-    }
-    if (avatar !== undefined) {
-      fields.push('avatar = ?');
-      values.push(avatar);
+    // 统一清洗输入
+    const cleanPhone = normalizeNullable(typeof phone === 'string' ? phone.trim() : phone);
+    const cleanEmail = normalizeNullable(typeof email === 'string' ? email.trim() : email);
+
+    // 业务约束：教师/学生仅允许修改手机号和邮箱
+    // 注意：这里做后端强校验，防止前端被绕过后修改其他字段。
+    const contactOnlyRoles = ['teacher', 'student'];
+    const isContactOnly = contactOnlyRoles.includes(role);
+
+    if (isContactOnly) {
+      if (cleanPhone !== undefined) {
+        // 手机号允许空字符串；非空时必须是11位数字
+        if (cleanPhone !== '' && !/^\d{11}$/.test(cleanPhone)) {
+          return res.status(400).json({ msg: '手机号必须为11位数字' });
+        }
+        fields.push('phone = ?');
+        values.push(cleanPhone);
+      }
+      if (cleanEmail !== undefined) {
+        // 按需求放宽：邮箱允许空字符串；非空时只要包含 @ 即可
+        if (cleanEmail !== '' && !String(cleanEmail).includes('@')) {
+          return res.status(400).json({ msg: '邮箱需包含@' });
+        }
+        fields.push('email = ?');
+        values.push(cleanEmail);
+      }
+
+      if (fields.length === 0) {
+        return res.status(400).json({ msg: '教师和学生仅可修改手机号和邮箱' });
+      }
+    } else {
+      // 管理员或其他角色：保留原有可更新字段能力
+      if (username !== undefined) {
+        fields.push('username = ?');
+        values.push(username);
+      }
+      if (realName !== undefined) {
+        fields.push('real_name = ?');
+        values.push(realName);
+      }
+      if (cleanPhone !== undefined) {
+        if (cleanPhone !== '' && !/^\d{11}$/.test(cleanPhone)) {
+          return res.status(400).json({ msg: '手机号必须为11位数字' });
+        }
+        fields.push('phone = ?');
+        values.push(cleanPhone);
+      }
+      if (cleanEmail !== undefined) {
+        if (cleanEmail !== '' && !String(cleanEmail).includes('@')) {
+          return res.status(400).json({ msg: '邮箱需包含@' });
+        }
+        fields.push('email = ?');
+        values.push(cleanEmail);
+      }
+      if (department !== undefined) {
+        fields.push('department = ?');
+        values.push(department);
+      }
+      if (avatar !== undefined) {
+        fields.push('avatar = ?');
+        values.push(avatar);
+      }
+
+      if (fields.length === 0) {
+        return res.status(400).json({ msg: '没有可更新的字段' });
+      }
     }
 
-    if (fields.length === 0) {
-      return res.status(400).json({ msg: '没有可更新的字段' });
+    // 唯一性冲突预检查（仅在非空值时检查）
+    if (cleanEmail !== undefined && cleanEmail !== '') {
+      const [emailRows] = await pool.query(
+        'SELECT user_id FROM user WHERE email = ? AND user_id <> ? LIMIT 1',
+        [cleanEmail, userId]
+      );
+      if (emailRows.length) {
+        return res.status(409).json({ msg: '该邮箱已被使用' });
+      }
+    }
+
+    if (cleanPhone !== undefined && cleanPhone !== '') {
+      const [phoneRows] = await pool.query(
+        'SELECT user_id FROM user WHERE phone = ? AND user_id <> ? LIMIT 1',
+        [cleanPhone, userId]
+      );
+      if (phoneRows.length) {
+        return res.status(409).json({ msg: '该手机号已被使用' });
+      }
     }
 
     values.push(userId);
@@ -232,7 +293,25 @@ exports.updateUserInfo = async (req, res) => {
     userInfo.department = department_name || userInfo.department || null;
     res.json({ user: userInfo });
   } catch (err) {
-    res.status(500).json({ msg: '服务器错误', error: err.message });
+    // 兜底处理常见数据库异常，避免前端只看到笼统500
+    if (err && err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ msg: '信息重复，请检查手机号或邮箱是否已被使用' });
+    }
+    if (err && err.code === 'ER_DATA_TOO_LONG') {
+      return res.status(400).json({ msg: '输入内容过长，请缩短后重试' });
+    }
+    if (err && err.code === 'ER_BAD_NULL_ERROR') {
+      return res.status(400).json({ msg: '输入内容不完整，请检查后重试' });
+    }
+    // 打印完整错误，便于在后端日志快速定位真实问题
+    console.error('updateUserInfo failed:', {
+      code: err?.code,
+      message: err?.message,
+      sqlMessage: err?.sqlMessage
+    });
+
+    const detail = err?.sqlMessage || err?.message || '未知错误';
+    res.status(500).json({ msg: '服务器错误', error: detail });
   }
 };
 
