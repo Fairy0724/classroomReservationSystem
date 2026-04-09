@@ -77,14 +77,10 @@
               <span class="info-label">学院</span>
               <span class="info-value">{{ userStore.userInfo?.department }}</span>
             </div>
-            <!-- <div class="info-item">
-              <span class="info-label">注册时间</span>
-              <span class="info-value">{{ formatDate(userStore.userInfo?.createTime) }}</span>
-            </div> -->
           </div>
         </div>
 
-        <!-- 我的预约：替换商城“地址/收藏” -->
+        <!-- 我的预约 -->
         <div v-if="currentMenu === 'reservations'" class="content-card">
           <div class="card-header">
             <h2>我的预约</h2>
@@ -124,7 +120,7 @@
               <div class="reservation-header">
                 <div>
                   <h3>{{ item.classroomName }}</h3>
-                  <p class="reservation-meta">{{ item.date }} · {{ item.time }}</p>
+                  <p class="reservation-meta">{{ formatDate(item.date) }} · {{ item.time }}</p>
                 </div>
                 <span :class="['status-tag', statusClass(item.status)]">{{ item.status }}</span>
               </div>
@@ -137,9 +133,6 @@
               </div>
             </div>
           </div>
-
-          <!-- 数据来源说明 -->
-          <p class="helper-text">数据来自后端“我的预约”接口。</p>
         </div>
 
         <!-- 账号安全 -->
@@ -152,18 +145,6 @@
                 <p>建议您定期更换密码，设置安全性高的密码可以使账号更安全</p>
               </div>
               <el-button @click="showPwdDialog = true">修改</el-button>
-            </div>
-            <div class="security-item">
-              <div class="security-info">
-                <h3>手机号验证</h3>
-                <!-- 默认都绑定了 -->
-
-                <template>
-                  <p>已绑定：{{ userStore.userInfo?.phone }}</p>
-                </template>
-              </div>
-              <el-button @click="showPhoneDialog = true">修改</el-button>
-
             </div>
           </div>
         </div>
@@ -219,21 +200,6 @@
         <el-button type="primary" :loading="saveBasicLoading" @click="handleSaveBasicEdit">保存</el-button>
       </template>
     </el-dialog>
-
-    <!-- 修改手机号弹窗 -->
-    <el-dialog title="修改手机号" v-model="showPhoneDialog" width="400px">
-      <el-form :model="phoneForm" :rules="phoneRules" ref="phoneFormRef" label-width="90px">
-        <el-form-item label="新手机号" prop="newPhone">
-          <el-input v-model="phoneForm.newPhone"></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="showPhoneDialog = false">取消</el-button>
-        <el-button type="primary" @click="handleChangePhone">确定</el-button>
-      </template>
-    </el-dialog>
-
-
   </div>
 
 </template>
@@ -577,29 +543,6 @@ const handleChangePwd = async () => {
   showPwdDialog.value = false;
   pwdForm.value = { oldPwd: '', newPwd: '', confirmPwd: '' };
 };
-
-// 修改手机号弹窗与表单
-const showPhoneDialog = ref(false);
-const phoneFormRef = ref();
-const phoneForm = ref({ newPhone: '' });
-const phoneRules = {
-  newPhone: [
-    { required: true, message: '请输入新手机号', trigger: 'blur' },
-    { pattern: /^\d{11}$/, message: '手机号必须为11位数字', trigger: 'blur' }
-  ]
-};
-
-// 修改手机号逻辑
-const handleChangePhone = async () => {
-  await phoneFormRef.value.validate();
-  await userStore.updatePhone(phoneForm.value.newPhone);
-  ElMessage.success('手机号修改成功');
-  showPhoneDialog.value = false;
-  phoneForm.value = { newPhone: '' };
-};
-
-
-
 // 头像加载失败兜底（防止外链防盗链/404）
 const handleAvatarError = (event) => {
   event.target.src = logoUrl;
@@ -975,6 +918,11 @@ watch(() => userStore.userInfo, (info) => {
 
 :deep(.el-input.is-focus .el-input__wrapper) {
   box-shadow: 0 0 0 1px #2ecc71 inset, 0 0 0 2px rgba(46, 204, 113, 0.2);
+}
+
+/* 统一本页按钮圆角：包括默认按钮、主按钮、对话框按钮等 */
+:deep(.el-button) {
+  border-radius: 20px;
 }
 
 :deep(.el-button--primary) {
