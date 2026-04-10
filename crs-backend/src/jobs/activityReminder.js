@@ -1,5 +1,5 @@
 // 定期扫描预约并发提醒
-const { pool } = require('../db/db');
+const db = require('../db/db');
 const {
   activityReminderLeadMinutes,
   activityReminderIntervalMs
@@ -19,6 +19,9 @@ const toMysqlDateTime = (date) => {
 // 发送活动提醒
 const runReminderJob = async () => {
   try {
+    // 避免模块初始化时序导致 pool 尚未挂载
+    if (!db.pool) return;
+
     const now = new Date();
     const leadMinutes = Number(activityReminderLeadMinutes || 60);
     const end = new Date(now.getTime() + leadMinutes * 60 * 1000);
@@ -27,7 +30,7 @@ const runReminderJob = async () => {
     const endText = toMysqlDateTime(end);
 
     // 查找即将开始的已通过预约
-    const [rows] = await pool.query(
+    const [rows] = await db.pool.query(
       `SELECT reservation_id, applicant_id, activity_name, date, start_time
        FROM reservation
        WHERE status = '已通过'
@@ -45,7 +48,7 @@ const runReminderJob = async () => {
       const title = '活动提醒通知';
       const content = `您预约的【${activityName}】将于 ${startTime} 开始，请准时使用并保持教室整洁`;
 
-      const [exists] = await pool.query(
+      const [exists] = await db.pool.query(
         `SELECT message_id FROM message
          WHERE user_id = ? AND type = 'activity_reminder' AND content = ?
          LIMIT 1`,
@@ -54,7 +57,7 @@ const runReminderJob = async () => {
 
       if (exists.length) continue;
 
-      await pool.query(
+      await db.pool.query(
         `INSERT INTO message (user_id, type, title, content, send_time, is_read)
          VALUES (?, 'activity_reminder', ?, ?, NOW(), 0)`,
         [item.applicant_id, title, content]

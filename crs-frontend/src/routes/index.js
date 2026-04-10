@@ -16,6 +16,7 @@ const AdminTeacherList = () => import('@/views/admin/TeacherList.vue')
 const AdminStudentList = () => import('@/views/admin/StudentList.vue')
 const AdminProfile = () => import('@/views/admin/AdminProfile.vue')
 const AdminNoticeList = () => import('@/views/admin/NoticeList.vue')
+const AdminReservationHistoryList = () => import('@/views/admin/ReservationHistoryList.vue')
 const Classroom = () => import('@/views/user/Classroom.vue')
 const ClassroomDetail = () => import('@/views/user/ClassroomDetail.vue')
 const Reservation = () => import('@/views/user/Reservation.vue')
@@ -201,6 +202,13 @@ const routes = [
             path: 'notice',
             name: 'adminNotice',
             component: AdminNoticeList,
+            meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
+          },
+          {
+            // 管理员：历史预约管理（只读）
+            path: 'reservation-history',
+            name: 'adminReservationHistory',
+            component: AdminReservationHistoryList,
             meta: { keepAlive: false, isAdmin: true, requiresAuth: true }
           },
         ]

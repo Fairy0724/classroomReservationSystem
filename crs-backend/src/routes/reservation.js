@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const reservationController = require('../controllers/reservationController');
 const auth = require('../middlewares/auth');
+const requireAdmin = require('../middlewares/admin');
 
 // 提交预约申请
 router.post('/', auth, reservationController.createReservation);
@@ -11,6 +12,9 @@ router.get('/occupied', reservationController.getOccupiedPeriods);
 
 // 获取当前用户预约记录
 router.get('/my', auth, reservationController.getMyReservations);
+
+// 管理员：历史预约列表（只读）
+router.get('/admin/history', auth, requireAdmin, reservationController.getAdminReservationHistory);
 
 // 获取预约详情（本人）
 router.get('/:id', auth, reservationController.getReservationDetail);

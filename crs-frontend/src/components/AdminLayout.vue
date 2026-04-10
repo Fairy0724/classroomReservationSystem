@@ -47,6 +47,12 @@
             </el-icon>
             <span>系统公告</span>
           </el-menu-item>
+          <el-menu-item index="/admin/reservation-history">
+            <el-icon>
+              <Calendar />
+            </el-icon>
+            <span>历史预约</span>
+          </el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="user-manage">
@@ -136,6 +142,7 @@ import {
   Grid,
   ChatDotRound,
   Bell,
+  Calendar,
   User,
   UserFilled,
   Avatar,

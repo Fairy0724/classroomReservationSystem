@@ -33,7 +33,7 @@
           </div>
         </div>
 
-        <div class="stat-card" style="--accent-color: #67C23A;">
+        <div class="stat-card" style="--accent-color: #67C23A;" @click="$router.push('/admin/reservation-history')">
           <div class="stat-icon">
             <el-icon :size="32">
               <Calendar />
@@ -113,7 +113,8 @@ const breadcrumbText = computed(() => {
     '/admin/students': '学生信息',
     '/admin/profile': '个人信息',
     '/admin/feedback': '反馈信息',
-    '/admin/notice': '系统公告'
+    '/admin/notice': '系统公告',
+    '/admin/reservation-history': '历史预约管理'
   }
   return map[route.path] || '系统首页'
 })

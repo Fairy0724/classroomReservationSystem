@@ -328,6 +328,116 @@ const getMyReservations = async (req, res) => {
 };
 
 /**
+ * 管理员查询历史预约（只读）
+ * query:
+ * - page/pageSize: 分页参数
+ * - keyword: 活动名/用户名/教室关键词
+ * - status: 预约状态
+ * - startDate/endDate: 预约日期区间（按 date 字段筛选）
+ */
+const getAdminReservationHistory = async (req, res) => {
+  try {
+    const page = Math.max(Number(req.query?.page) || 1, 1);
+    const pageSize = Math.max(Number(req.query?.pageSize) || 10, 1);
+    const offset = (page - 1) * pageSize;
+
+    const keyword = String(req.query?.keyword || '').trim();
+    const status = String(req.query?.status || '').trim();
+    const startDate = String(req.query?.startDate || '').trim();
+    const endDate = String(req.query?.endDate || '').trim();
+
+    const where = [];
+    const params = [];
+
+    // 关键词匹配：活动名称 / 申请人姓名(兼容用户名) / 教室位置
+    if (keyword) {
+      where.push('(r.activity_name LIKE ? OR u.real_name LIKE ? OR u.username LIKE ? OR CONCAT(c.building, c.room_num) LIKE ?)');
+      const like = `%${keyword}%`;
+      params.push(like, like, like, like);
+    }
+
+    // 状态匹配：例如 待审批 / 已通过 / 已驳回 / 已取消
+    if (status) {
+      where.push('r.status = ?');
+      params.push(status);
+    }
+
+    // 预约日期区间筛选
+    if (startDate) {
+      where.push('r.date >= ?');
+      params.push(startDate);
+    }
+    if (endDate) {
+      where.push('r.date <= ?');
+      params.push(endDate);
+    }
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    // 先查总数，供分页组件展示
+    const [countRows] = await pool.query(
+      `SELECT COUNT(*) AS total
+       FROM reservation r
+       LEFT JOIN user u ON r.applicant_id = u.user_id
+       LEFT JOIN classroom c ON r.classroom_id = c.classroom_id
+       ${whereSql}`,
+      params
+    );
+
+    // 再查当前页数据，按预约ID倒序便于查看最新记录
+    const [rows] = await pool.query(
+      `SELECT
+        r.reservation_id,
+        r.applicant_id,
+        r.classroom_id,
+        r.date,
+        r.start_time,
+        r.end_time,
+        r.activity_name,
+        r.activity_type,
+        r.participant_count,
+        r.status,
+        r.submitted_at,
+        r.approved_at,
+        r.rejected_at,
+        COALESCE(NULLIF(u.real_name, ''), u.username) AS applicant_name,
+        COALESCE(NULLIF(approver_user.real_name, ''), NULLIF(t.name, ''), '--') AS approver_name,
+        c.building,
+        c.room_num
+       FROM reservation r
+       LEFT JOIN user u ON r.applicant_id = u.user_id
+       LEFT JOIN (
+         SELECT ar1.reservation_id, ar1.teacher_id
+         FROM approval_record ar1
+         INNER JOIN (
+           SELECT reservation_id, MAX(approval_id) AS max_approval_id
+           FROM approval_record
+           GROUP BY reservation_id
+         ) latest ON latest.max_approval_id = ar1.approval_id
+       ) latest_approval ON latest_approval.reservation_id = r.reservation_id
+       LEFT JOIN teacher t ON t.teacher_id = latest_approval.teacher_id
+       LEFT JOIN user approver_user ON approver_user.user_id = t.user_id
+       LEFT JOIN classroom c ON r.classroom_id = c.classroom_id
+       ${whereSql}
+       ORDER BY r.reservation_id DESC
+       LIMIT ? OFFSET ?`,
+      [...params, pageSize, offset]
+    );
+
+    res.json({
+      data: rows,
+      pagination: {
+        page,
+        pageSize,
+        total: Number(countRows?.[0]?.total || 0)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ msg: `系统服务异常：${err.message}` });
+  }
+};
+
+/**
  * 获取预约详情（只允许本人查看）
  * params: id
  */
@@ -396,6 +506,7 @@ const cancelReservation = async (req, res) => {
 module.exports = {
   createReservation,
   getMyReservations,
+  getAdminReservationHistory,
   getOccupiedPeriods,
   getReservationDetail,
   cancelReservation
