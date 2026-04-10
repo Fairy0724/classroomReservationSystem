@@ -31,12 +31,14 @@ const runReminderJob = async () => {
 
     // 查找即将开始的已通过预约
     const [rows] = await db.pool.query(
-      `SELECT reservation_id, applicant_id, activity_name, date, start_time
-       FROM reservation
+      `SELECT r.reservation_id, r.applicant_id, r.activity_name, r.date, r.start_time, r.end_time,
+              c.building, c.room_num
+       FROM reservation r
+       LEFT JOIN classroom c ON c.classroom_id = r.classroom_id
        WHERE status = '已通过'
          AND start_time IS NOT NULL
          AND date IS NOT NULL
-         AND TIMESTAMP(date, start_time) BETWEEN ? AND ?`,
+         AND TIMESTAMP(r.date, r.start_time) BETWEEN ? AND ?`,
       [startText, endText]
     );
 
@@ -44,9 +46,12 @@ const runReminderJob = async () => {
 
     for (const item of rows) {
       const activityName = item.activity_name || '活动';
-      const startTime = `${item.date} ${String(item.start_time).slice(0, 5)}`;
-      const title = '活动提醒通知';
-      const content = `您预约的【${activityName}】将于 ${startTime} 开始，请准时使用并保持教室整洁`;
+      const dateText = String(item.date || '').slice(0, 10) || '--';
+      const startText = String(item.start_time || '').slice(0, 5) || '--';
+      const endText = String(item.end_time || '').slice(0, 5) || '--';
+      const classroomName = `${item.building || ''}${item.room_num || ''}` || '教室';
+      const title = '教室预约活动即将开始';
+      const content = `您预约的 ${classroomName} 活动将于${dateText} ${startText} 开始，请提前到达教室。\n活动信息：${activityName}，日期：${dateText}，时段：${startText}-${endText}。\n请保持场地整洁，祝您活动顺利！`;
 
       const [exists] = await db.pool.query(
         `SELECT message_id FROM message

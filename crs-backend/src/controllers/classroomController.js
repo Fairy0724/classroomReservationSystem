@@ -332,7 +332,7 @@ const updateClassroom = async (req, res) => {
       if (adminId && hasAnnouncementTable) {
         const title = '教室维护通知'
         const content = classroomLabel
-          ? `教室 ${classroomLabel} 已调整为维护中状态，暂停预约。`
+          ? `${classroomLabel} 已调整为维护中状态，暂停预约。`
           : '教室已调整为维护中状态，暂停预约。'
 
         // 1) 写入系统公告表，供公告列表展示。

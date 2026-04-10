@@ -16,7 +16,7 @@
           </select>
           <select v-model="filterType">
             <option value="">全部类型</option>
-            <option value="approval_result">审批结果</option>
+            <option value="approval">审批结果</option>
             <option value="activity_reminder">活动提醒</option>
             <option value="system_notice">系统通知</option>
           </select>
@@ -125,10 +125,9 @@ const normalizeMessage = (item) => {
 // 格式化消息类型显示
 const formatType = (type) => {
   const map = {
-    approval_result: '审批结果',
+    approval: '审批结果',
     activity_reminder: '活动提醒',
-    system_notice: '系统通知',
-    approval: '审批结果'
+    system_notice: '系统通知'
   }
   return map[type] || '系统通知'
 }
@@ -152,16 +151,16 @@ const buildSummary = (item) => {
   const title = item.title || '预约'
   const content = String(item.content || '')
   // 优先展示内容，避免审批结果被固定模板覆盖
-  if (content) return content.slice(0, 60)
-  if (type === 'approval_result') {
-    const status = title.includes('驳回') ? '驳回' : '通过'
-    return `您的${title}已${status}`
-  }
-  if (type === 'activity_reminder') {
-    const match = content.match(/\d{4}-\d{2}-\d{2}\s*\d{1,2}:\d{2}/)
-    const timeText = match ? match[0] : '指定时间'
-    return `您的${title}将于${timeText}开始`
-  }
+  if (content) return content.slice(0, 120)
+  // if (type === 'approval') {
+  //   const status = title.includes('驳回') ? '驳回' : '通过'
+  //   return `您的${title}已${status}`
+  // }
+  // if (type === 'activity_reminder') {
+  //   const match = content.match(/\d{4}-\d{2}-\d{2}\s*\d{1,2}:\d{2}/)
+  //   const timeText = match ? match[0] : '指定时间'
+  //   return `您的${title}将于${timeText}开始`
+  // }
   return '暂无摘要'
 }
 
@@ -356,12 +355,12 @@ onMounted(() => {
   color: #166534;
 }
 
-.type.activity {
+.type.activity_reminder {
   background: #fef3c7;
   color: #92400e;
 }
 
-.type.system {
+.type.system_notice {
   background: #e0f2fe;
   color: #075985;
 }

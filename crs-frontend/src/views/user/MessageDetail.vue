@@ -56,10 +56,9 @@ const normalizeMessage = (item) => {
 
 const formatType = (type) => {
   const map = {
-    approval_result: '审批结果',
+    approval: '审批结果',
     activity_reminder: '活动提醒',
-    system_notice: '系统通知',
-    approval: '审批结果'
+    system_notice: '系统通知'
   }
   return map[type] || '系统通知'
 }
