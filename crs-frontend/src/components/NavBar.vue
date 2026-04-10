@@ -42,10 +42,14 @@
           </RouterLink>
 
           <!-- 仅教师角色显示审批管理 -->
-          <RouterLink v-if="showApprovalLink && userStore.userInfo?.role === 'teacher'" to="/approval" class="nav-link">
+          <RouterLink v-if="showApprovalLink && userStore.userInfo?.role === 'teacher'" to="/approval"
+            class="nav-link approval-link">
             <el-icon>
               <Checked />
             </el-icon> 审批管理
+            <span v-if="pendingApprovalCount > 0" class="unread-badge" aria-label="待审批数量">
+              {{ pendingApprovalCount > 99 ? '99+' : pendingApprovalCount }}
+            </span>
           </RouterLink>
 
           <!-- 用户信息下拉菜单 -->
@@ -140,6 +144,7 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const unreadCount = ref(0)
+const pendingApprovalCount = ref(0)
 let unreadTimer = null
 
 const isLoggedIn = computed(() => !!userStore.token && !!userStore.userInfo)
@@ -164,8 +169,8 @@ onMounted(async () => {
   }
 
   if (isLoggedIn.value) {
-    await fetchUnreadCount()
-    unreadTimer = window.setInterval(fetchUnreadCount, 30000)
+    await fetchNavBadges()
+    unreadTimer = window.setInterval(fetchNavBadges, 30000)
   }
 })
 
@@ -184,6 +189,25 @@ const fetchUnreadCount = async () => {
   } catch {
     unreadCount.value = 0
   }
+}
+
+const fetchPendingApprovalCount = async () => {
+  if (userStore.userInfo?.role !== 'teacher') {
+    pendingApprovalCount.value = 0
+    return
+  }
+
+  try {
+    const res = await request.get('/approvals/stats')
+    const pending = Number(res?.data?.pending ?? 0)
+    pendingApprovalCount.value = Number.isFinite(pending) ? pending : 0
+  } catch {
+    pendingApprovalCount.value = 0
+  }
+}
+
+const fetchNavBadges = async () => {
+  await Promise.all([fetchUnreadCount(), fetchPendingApprovalCount()])
 }
 // 退出登录
 const handleLogout = async () => {
@@ -298,7 +322,28 @@ const handleInput = (event) => {
   padding-right: 14px;
 }
 
+.approval-link {
+  position: relative;
+  padding-right: 14px;
+}
+
 .message-link .unread-badge {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.approval-link .unread-badge {
   position: absolute;
   top: -4px;
   right: -2px;
