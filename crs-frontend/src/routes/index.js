@@ -47,14 +47,14 @@ const routes = [
         path: 'classrooms',
         name: 'classroomList',
         component: Classroom,
-        meta: { keepAlive: true }
+        meta: { keepAlive: true, requiresAuth: true }
       },
       {
         // 教室详情页
         path: 'classroom/:id',
         name: 'classroomDetail',
         component: ClassroomDetail,
-        meta: { keepAlive: false }
+        meta: { keepAlive: false, requiresAuth: true }
       },
       {
         // 教室预约页（从详情页进入）

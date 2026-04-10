@@ -1,6 +1,9 @@
 const { pool } = require('../db/db');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const { jwtSecret } = require('../config/config');
+
+const BCRYPT_ROUNDS = 10;
 
 // ==================== 登录失败次数限制（内存级） ====================
 // 说明：这里使用内存 Map 进行“临时锁定”，无需改表即可满足需求。
@@ -71,6 +74,28 @@ const normalizeNullable = (value) => {
   return value;
 };
 
+// 识别 bcrypt 哈希串，兼容历史明文密码平滑升级
+const isBcryptHash = (value) => typeof value === 'string' && /^\$2[aby]\$\d{2}\$/.test(value);
+
+const hashPassword = async (plainPassword) => {
+  return bcrypt.hash(String(plainPassword), BCRYPT_ROUNDS);
+};
+
+const verifyPassword = async (plainPassword, storedPassword) => {
+  if (typeof storedPassword !== 'string') {
+    return { matched: false, shouldUpgrade: false };
+  }
+
+  if (isBcryptHash(storedPassword)) {
+    const matched = await bcrypt.compare(String(plainPassword), storedPassword);
+    return { matched, shouldUpgrade: false };
+  }
+
+  // 历史明文数据兼容：比对成功后触发自动升级为 bcrypt
+  const matched = String(storedPassword) === String(plainPassword);
+  return { matched, shouldUpgrade: matched };
+};
+
 let userColumnSetCache = null;
 
 const getUserColumnSet = async () => {
@@ -115,13 +140,20 @@ exports.login = async (req, res) => {
       return res.status(401).json({ msg: '该账号错误' });
     }
     const user = rows[0];
-    if (user.password !== password) {
+    const { matched, shouldUpgrade } = await verifyPassword(password, user.password);
+    if (!matched) {
       // A-7：密码错误次数记录与提示
       const nextInfo = recordFailedAttempt(username);
       if (nextInfo.lockedUntil && Date.now() < nextInfo.lockedUntil) {
         return res.status(429).json({ msg: '密码错误次数过多，请稍后重试' });
       }
       return res.status(401).json({ msg: '密码错误，请重新输入' });
+    }
+
+    // 历史明文密码在首次成功登录后自动升级为哈希存储
+    if (shouldUpgrade) {
+      const upgradedHash = await hashPassword(password);
+      await pool.query('UPDATE user SET password = ? WHERE user_id = ?', [upgradedHash, user.user_id]);
     }
 
     // 登录成功，清除失败计数
@@ -335,14 +367,16 @@ exports.changePassword = async (req, res) => {
       return res.status(404).json({ msg: '用户不存在' });
     }
     const user = rows[0];
-    if (user.password !== oldPwd) {
+    const { matched } = await verifyPassword(oldPwd, user.password);
+    if (!matched) {
       return res.status(400).json({ msg: '原密码错误' });
     }
     if (oldPwd === newPwd) {
       return res.status(400).json({ msg: '新密码不能与原密码相同' });
     }
 
-    await pool.query('UPDATE user SET password = ? WHERE user_id = ?', [newPwd, userId]);
+    const newHash = await hashPassword(newPwd);
+    await pool.query('UPDATE user SET password = ? WHERE user_id = ?', [newHash, userId]);
     res.json({ msg: '密码修改成功' });
   } catch (err) {
     res.status(500).json({ msg: '服务器错误', error: err.message });
@@ -490,9 +524,12 @@ exports.adminCreateUser = async (req, res) => {
       return res.status(409).json({ msg: '用户名已存在' });
     }
 
+    // 新建账号密码使用 bcrypt 加密后入库
+    const encryptedPassword = await hashPassword(password);
+
     const userColumns = await getUserColumnSet();
     const insertColumns = ['username', 'password', 'role'];
-    const insertValues = [username, password, role];
+    const insertValues = [username, encryptedPassword, role];
 
     if (userColumns.has('real_name')) {
       insertColumns.push('real_name');
@@ -686,15 +723,14 @@ exports.adminDeleteUser = async (req, res) => {
 };
 
 /**
- * 管理员：重置用户密码（默认 123456，可传 newPassword）
+ * 管理员：重置用户密码（默认 姓名首字母+123456，可传 newPassword）
  */
 exports.adminResetPassword = async (req, res) => {
   try {
     const { id } = req.params;
     const { newPassword } = req.body || {};
-    const password = newPassword || '123456';
 
-    const [rows] = await pool.query('SELECT role FROM user WHERE user_id = ?', [id]);
+    const [rows] = await pool.query('SELECT role, real_name, username FROM user WHERE user_id = ?', [id]);
     if (!rows.length) {
       return res.status(404).json({ msg: '用户不存在' });
     }
@@ -703,7 +739,15 @@ exports.adminResetPassword = async (req, res) => {
       return res.status(400).json({ msg: '不允许重置管理员密码' });
     }
 
-    await pool.query('UPDATE user SET password = ? WHERE user_id = ?', [password, id]);
+    const realName = String(rows[0].real_name || '').trim();
+    const username = String(rows[0].username || '').trim();
+    const baseName = realName || username;
+    const firstChar = baseName ? baseName.charAt(0) : '';
+    const defaultPassword = firstChar ? `${firstChar}123456` : '123456';
+    const password = newPassword || defaultPassword;
+
+    const encryptedPassword = await hashPassword(password);
+    await pool.query('UPDATE user SET password = ? WHERE user_id = ?', [encryptedPassword, id]);
     res.json({ msg: '密码已重置', data: { userId: id, password } });
   } catch (err) {
     res.status(500).json({ msg: '服务器错误', error: err.message });
