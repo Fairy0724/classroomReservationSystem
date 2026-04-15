@@ -388,6 +388,29 @@ const normalizeEquipment = (value) => {
   return []
 }
 
+// 默认排序：一教 -> 二教 -> 其他；同楼按楼层升序，再按教室号升序
+const getBuildingPriority = (building) => {
+  const text = String(building || '').trim()
+  if (!text) return 99
+
+  if (text.includes('一教') || text.includes('1号楼') || text.includes('1教')) return 1
+  if (text.includes('二教') || text.includes('2号楼') || text.includes('2教')) return 2
+
+  const match = text.match(/(\d+)/)
+  if (match) return Number(match[1]) || 99
+  return 99
+}
+
+const toFloorNumber = (floor) => {
+  const n = Number(floor)
+  return Number.isFinite(n) ? n : 999
+}
+
+const toRoomNumber = (roomNum) => {
+  const match = String(roomNum || '').match(/(\d+)/)
+  return match ? Number(match[1]) || 9999 : 9999
+}
+
 const buildCategories = (rooms) => {
   const typeMap = new Map()
   rooms.forEach(room => {
@@ -495,6 +518,9 @@ const fetchClassrooms = async () => {
       return {
         id: item.classroomId,
         name: `${building}${roomNum}`,
+        building,
+        floor,
+        roomNum,
         typeName: item.type || '普通教室',
         location: floor ? `${building}-${floor}层` : building,
         capacity: item.capacity,
@@ -502,6 +528,16 @@ const fetchClassrooms = async () => {
         equipment: normalizeEquipment(item.equipment),
         imageUrl: item.mainImage || ''
       }
+    })
+
+    rooms.sort((a, b) => {
+      const buildingDiff = getBuildingPriority(a.building) - getBuildingPriority(b.building)
+      if (buildingDiff !== 0) return buildingDiff
+
+      const floorDiff = toFloorNumber(a.floor) - toFloorNumber(b.floor)
+      if (floorDiff !== 0) return floorDiff
+
+      return toRoomNumber(a.roomNum) - toRoomNumber(b.roomNum)
     })
 
     buildCategories(rooms)
