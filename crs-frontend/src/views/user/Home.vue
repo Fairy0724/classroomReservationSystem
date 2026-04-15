@@ -643,15 +643,22 @@ onMounted(async () => {
  * 8. 页脚样式
  */
 
-/* ==================== 全局变量 ==================== */
-:root {
+/* ==================== 页面变量 ==================== */
+.home-container {
   --primary-color: #2ecc71;
   --primary-dark: #27ae60;
   --secondary-color: #f39c12;
+  --success-color: #22c55e;
+  --warning-color: #f59e0b;
+  --danger-color: #ef4444;
+  --text-primary: #1f2937;
+  --text-regular: #374151;
+  --text-secondary: #6b7280;
   --text-color: #333;
   --text-light: #666;
   --bg-light: #f8f9fa;
   --bg-dark: #e9ecef;
+  --border-color: #e5e7eb;
   --border-radius: 8px;
   --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
@@ -935,23 +942,25 @@ onMounted(async () => {
   top: 10px;
   left: 10px;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: 15px;
   font-size: 12px;
   font-weight: 500;
+  background-color: rgba(15, 23, 42, 0.28);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
 .status-badge.available {
-  /* background-color: var(--success-color); */
-  background-color: var(--primary-color);
+  background-color: rgba(46, 204, 113, 0.72);
 }
 
 .status-badge.occupied {
-  background-color: var(--warning-color);
+  background-color: rgba(245, 158, 11, 0.72);
 }
 
 .status-badge.maintenance {
-  background-color: var(--text-secondary);
+  background-color: rgba(239, 68, 68, 0.72);
 }
 
 /* 快速预约按钮 */
