@@ -42,9 +42,9 @@ const getReservationMessageContext = async (query, reservationId) => {
   return rows[0] || null;
 };
 
-const getTeacherContact = async (query, teacherId) => {
+const getTeacherPhone = async (query, teacherId) => {
   if (!teacherId) {
-    return { teacherName: '审批教师', teacherContact: '暂无联系方式' };
+    return { teacherName: '审批教师', teacherPhone: '暂无联系方式' };
   }
 
   const [rows] = await query(
@@ -52,8 +52,7 @@ const getTeacherContact = async (query, teacherId) => {
       t.teacher_id,
       t.name AS teacher_table_name,
       u.real_name,
-      u.phone,
-      u.email
+      u.phone
      FROM teacher t
      LEFT JOIN user u ON u.user_id = t.user_id
      WHERE t.teacher_id = ?
@@ -63,8 +62,8 @@ const getTeacherContact = async (query, teacherId) => {
 
   const row = rows[0] || {};
   const teacherName = row.real_name || row.teacher_table_name || `教师${teacherId}`;
-  const teacherContact = row.phone || row.email || '暂无联系方式';
-  return { teacherName, teacherContact };
+  const teacherPhone = row.phone || '暂无联系方式';
+  return { teacherName, teacherPhone };
 };
 
 // 发送审批结果通知
@@ -80,7 +79,7 @@ const sendApprovalNotification = async ({
   const context = await getReservationMessageContext(query, reservationId);
   if (!context || !context.applicant_id) return;
 
-  const { teacherName, teacherContact } = await getTeacherContact(query, teacherId);
+  const { teacherName, teacherPhone } = await getTeacherPhone(query, teacherId);
 
   const classroomName = `${context.building || ''}${context.room_num || ''}` || `教室${context.classroom_id || ''}`;
   const submitDateText = formatDate(context.submitted_at);
@@ -92,12 +91,12 @@ const sendApprovalNotification = async ({
   const participantText = Number(context.participant_count || 0);
 
   let title = `您于 ${submitDateText} 提交的【${classroomName}】预约申请已通过审批。`;
-  let content = `预约详情：${reservationDateText} ${startText}-${endText}，活动：${activityNameText}-${activityTypeText}，参与人数：${participantText}人。\n请按时使用教室，如需取消请至少提前2小时操作。\n如有疑问请联系审批教师：${teacherName}（${teacherContact}）。`;
+  let content = `预约详情：${reservationDateText} ${startText}-${endText}，活动：${activityNameText}-${activityTypeText}，参与人数：${participantText}人。\n请按时使用教室，如需取消请至少提前2小时操作。\n如有疑问请联系审批教师：${teacherName}（${teacherPhone}）。`;
 
   if (result === '驳回') {
     const reasonText = reason ? `，驳回理由：${reason}` : '';
     title = `您于 ${submitDateText} 提交的【${classroomName}】预约申请未通过审批。`;
-    content = `预约详情：${reservationDateText} ${startText}-${endText}，活动：${activityNameText}-${activityTypeText}，参与人数：${participantText}人${reasonText}。\n如有疑问请联系审批教师：${teacherName}（${teacherContact}）。`;
+    content = `预约详情：${reservationDateText} ${startText}-${endText}，活动：${activityNameText}-${activityTypeText}，参与人数：${participantText}人${reasonText}。\n如有疑问请联系审批教师：${teacherName}（${teacherPhone}）。`;
   }
 
   await query(

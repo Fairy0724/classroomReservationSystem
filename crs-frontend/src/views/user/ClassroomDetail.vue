@@ -179,6 +179,7 @@
             <p>教室编号：{{ classroom.roomNum }}</p>
             <p>教室类型：{{ classroom.type }}</p>
             <p>负责教师：{{ classroom.responsibleTeacher || classroom.teacherName || '待分配' }}</p>
+            <p>教师联系方式：{{ classroom.teacherPhone || '暂无' }}</p>
             <p>设备：{{ classroom.equipment || '设备待完善' }}</p>
           </div>
           <!-- 设备参数 -->
@@ -240,6 +241,7 @@ const classroom = ref({
   type: '',
   status: '',
   responsibleTeacher: '',
+  teacherPhone: '',
   mainImage: '',
   extraImages: [],
   images: []
@@ -609,15 +611,17 @@ const fetchClassroom = async () => {
   ].filter(Boolean)
 }
 
-// 拉取负责教师（teacher_classroom_relation -> teacher.teacher_name）
+// 拉取负责教师（teacher_classroom_relation -> teacher + user 联系方式）
 const fetchResponsibleTeacher = async () => {
   const classroomId = route.params.id
   if (!classroomId) return
   try {
     const res = await request.get(`/classrooms/${classroomId}/teacher`)
     classroom.value.responsibleTeacher = res?.teacherName || ''
+    classroom.value.teacherPhone = res?.teacherPhone || ''
   } catch {
     classroom.value.responsibleTeacher = ''
+    classroom.value.teacherPhone = ''
   }
 }
 

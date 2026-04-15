@@ -145,7 +145,7 @@ const getClassrooms = async (req, res) => {
 
 /**
  * 获取教室负责教师（从 teacher_classroom_relation 关联 teacher 表）
- * 返回：{ teacherId, teacherName }
+ * 返回：{ teacherId, teacherName, teacherPhone }
  */
 const getResponsibleTeacher = async (req, res) => {
   const { id } = req.params
@@ -166,13 +166,14 @@ const getResponsibleTeacher = async (req, res) => {
         [id]
       )
       const teacherId = rows.length ? rows[0].teacher_id : null
-      return res.json({ teacherId, teacherName: null })
+      return res.json({ teacherId, teacherName: null, teacherPhone: null })
     }
 
     const [rows] = await pool.query(
-      `SELECT tcr.teacher_id, t.name
+      `SELECT tcr.teacher_id, t.name, u.phone
        FROM teacher_classroom_relation tcr
        LEFT JOIN teacher t ON t.teacher_id = tcr.teacher_id
+       LEFT JOIN user u ON u.user_id = t.user_id
        WHERE tcr.classroom_id = ?
        ORDER BY tcr.id ASC
        LIMIT 1`,
@@ -185,7 +186,8 @@ const getResponsibleTeacher = async (req, res) => {
 
     return res.json({
       teacherId: rows[0].teacher_id ?? null,
-      teacherName: rows[0].name ?? null
+      teacherName: rows[0].name ?? null,
+      teacherPhone: rows[0].phone || null
     })
   } catch (err) {
     return res.status(500).json({ msg: '服务器错误', error: err.message })
