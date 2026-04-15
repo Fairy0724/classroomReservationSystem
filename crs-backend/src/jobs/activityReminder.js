@@ -35,9 +35,9 @@ const runReminderJob = async () => {
               c.building, c.room_num
        FROM reservation r
        LEFT JOIN classroom c ON c.classroom_id = r.classroom_id
-       WHERE status = '已通过'
-         AND start_time IS NOT NULL
-         AND date IS NOT NULL
+       WHERE r.status = '已通过'
+         AND r.start_time IS NOT NULL
+         AND r.date IS NOT NULL
          AND TIMESTAMP(r.date, r.start_time) BETWEEN ? AND ?`,
       [startText, endText]
     );

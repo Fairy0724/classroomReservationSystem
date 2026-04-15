@@ -96,7 +96,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
 import {
   HomeFilled, Calendar, User, Setting, SwitchButton, Checked, ArrowDown, OfficeBuilding, Bell
@@ -164,7 +164,6 @@ onMounted(async () => {
       await userStore.fetchProfile()
     } catch {
       userStore.logout()
-      ElMessage.error('登录已过期，请重新登录')
     }
   }
 
