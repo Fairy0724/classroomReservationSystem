@@ -88,9 +88,15 @@
     <div class="main-area">
       <header class="top-header">
         <div class="header-left">
+          <!-- 面包屑导航 -->
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/admin' }">首页</el-breadcrumb-item>
-            <el-breadcrumb-item>{{ breadcrumb }}</el-breadcrumb-item>
+            <el-breadcrumb-item
+              v-for="(item, index) in breadcrumbItems"
+              :key="`${item.path}-${index}`"
+              :to="item.to"
+            >
+              {{ item.label }}
+            </el-breadcrumb-item>
           </el-breadcrumb>
         </div>
         <div class="header-right">
@@ -134,13 +140,11 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
-import logoUrl from '@/assets/images/logo.png'
 import {
   HomeFilled,
   Document,
   School,
   Grid,
-  ChatDotRound,
   Bell,
   Calendar,
   User,
@@ -149,20 +153,76 @@ import {
   ArrowDown,
   SwitchButton
 } from '@element-plus/icons-vue'
-import { el } from 'element-plus/es/locale/index.mjs'
-
-const props = defineProps({
-  breadcrumb: {
-    type: String,
-    default: '系统首页'
-  }
-})
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
 const activeMenu = computed(() => route.path)
+
+const menuTree = [
+  {
+    group: '信息管理',
+    children: [
+      { path: '/admin/classroom', label: '教室信息' },
+      { path: '/admin/course-schedule', label: '课程管理' },
+      { path: '/admin/classroom-type', label: '教室类型' },
+      { path: '/admin/notice', label: '系统公告' },
+      { path: '/admin/reservation-history', label: '历史预约' }
+    ]
+  },
+  {
+    group: '用户管理',
+    children: [
+      { path: '/admin/teachers', label: '教师信息' },
+      { path: '/admin/students', label: '学生信息' },
+      { path: '/admin/profile', label: '个人信息' }
+    ]
+  }
+]
+
+const normalizePath = (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return '/'
+  const normalized = raw.replace(/\/+$/, '')
+  return normalized || '/'
+}
+
+const findBreadcrumbMeta = (path) => {
+  for (const groupItem of menuTree) {
+    for (const page of groupItem.children) {
+      if (path === page.path) {
+        return { group: groupItem.group, label: page.label }
+      }
+      if (path.startsWith(`${page.path}/`)) {
+        return {
+          group: groupItem.group,
+          label: String(route.meta?.title || page.label || '详情').trim()
+        }
+      }
+    }
+  }
+  return null
+}
+
+const breadcrumbItems = computed(() => {
+  const currentPath = normalizePath(route.path)
+
+  if (currentPath === '/admin') {
+    return [{ label: '系统首页', path: '/admin', to: { path: '/admin' } }]
+  }
+
+  const items = []
+  const meta = findBreadcrumbMeta(currentPath)
+
+  if (meta?.group) {
+    items.push({ label: meta.group, path: `${currentPath}-group` })
+  }
+
+  const currentLabel = meta?.label || String(route.meta?.title || '系统首页').trim()
+  items.push({ label: currentLabel, path: currentPath })
+  return items
+})
 
 const handleLogout = () => {
   userStore.logout()

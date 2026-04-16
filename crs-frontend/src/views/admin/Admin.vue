@@ -1,5 +1,5 @@
 <template>
-  <AdminLayout :breadcrumb="breadcrumbText">
+  <AdminLayout>
     <!-- 管理员首页（仅 /admin 显示） -->
     <div v-if="isAdminHome" class="content-wrapper">
       <!-- ========== 左侧图表区域 ========== -->
@@ -103,21 +103,6 @@ const hotData = ref([])
 
 const route = useRoute()
 const isAdminHome = computed(() => route.path === '/admin')
-const breadcrumbText = computed(() => {
-  const map = {
-    '/admin': '系统首页',
-    '/admin/classroom': '教室管理',
-    '/admin/course-schedule': '课程管理',
-    '/admin/classroom-type': '教室类型',
-    '/admin/teachers': '教师信息',
-    '/admin/students': '学生信息',
-    '/admin/profile': '个人信息',
-    '/admin/feedback': '反馈信息',
-    '/admin/notice': '系统公告',
-    '/admin/reservation-history': '历史预约管理'
-  }
-  return map[route.path] || '系统首页'
-})
 
 // ==================== 生命周期 ====================
 const fetchDashboardData = async () => {

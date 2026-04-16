@@ -53,6 +53,9 @@
         <el-form-item label="新密码">
           <el-input v-model="pwdForm.newPwd" type="password" />
         </el-form-item>
+        <el-form-item label="确认新密码">
+          <el-input v-model="pwdForm.newPwdConfirm" type="password" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="pwdDialogVisible = false">取消</el-button>
@@ -93,7 +96,7 @@
  * 说明：复用用户中心接口，避免重复后端逻辑
  */
 import { reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElFormItem, ElMessage } from 'element-plus'
 import request from '@/utils/request'
 
 // ==================== 基本信息 ====================
@@ -118,7 +121,8 @@ const basicForm = reactive({
 const pwdDialogVisible = ref(false)
 const pwdForm = reactive({
   oldPwd: '',
-  newPwd: ''
+  newPwd: '',
+  newPwdConfirm: ''
 })
 
 // 获取管理员信息（复用 /user/profile）
@@ -163,6 +167,7 @@ const handleSaveBasicEdit = async () => {
 const openPwdDialog = () => {
   pwdForm.oldPwd = ''
   pwdForm.newPwd = ''
+  pwdForm.newPwdConfirm = ''
   pwdDialogVisible.value = true
 }
 
@@ -170,6 +175,10 @@ const openPwdDialog = () => {
 const handleChangePassword = async () => {
   if (!pwdForm.oldPwd || !pwdForm.newPwd) {
     ElMessage.warning('请输入原密码和新密码')
+    return
+  }
+  if (pwdForm.newPwd !== pwdForm.newPwdConfirm) {
+    ElMessage.warning('两次输入的新密码不一致')
     return
   }
   await request.put('/user/password', {
