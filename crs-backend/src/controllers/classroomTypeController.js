@@ -46,7 +46,7 @@ const listClassroomTypes = async (req, res) => {
       `SELECT type_id, type_name, type_desc
        FROM classroom_type
        ${whereSql}
-       ORDER BY type_id DESC
+       ORDER BY type_id ASC
        LIMIT ? OFFSET ?`,
       [...params, pageSize, offset]
     )
