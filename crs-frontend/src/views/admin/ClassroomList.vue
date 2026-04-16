@@ -44,7 +44,7 @@
     <el-dialog :title="dialogTitle" v-model="dialogVisible" width="720px">
       <el-form :model="form" label-width="100px">
         <el-form-item label="楼号" required>
-          <el-input v-model="form.building" placeholder="例如：一教" />
+          <el-input v-model="form.building" placeholder="例如：3教 / 三教 / 3号楼" />
         </el-form-item>
         <el-form-item label="楼层" required>
           <el-input-number v-model="form.floor" :min="1" />
@@ -134,6 +134,85 @@ const statusTag = (status) => {
   return 'info'
 }
 
+const parseChineseNumber = (text) => {
+  const token = String(text || '').trim()
+  if (!token) return null
+
+  const digitMap = {
+    '零': 0,
+    '一': 1,
+    '二': 2,
+    '两': 2,
+    '三': 3,
+    '四': 4,
+    '五': 5,
+    '六': 6,
+    '七': 7,
+    '八': 8,
+    '九': 9
+  }
+  const unitMap = {
+    '十': 10,
+    '百': 100,
+    '千': 1000
+  }
+
+  let result = 0
+  let current = 0
+
+  for (const ch of token) {
+    if (Object.prototype.hasOwnProperty.call(digitMap, ch)) {
+      current = digitMap[ch]
+      continue
+    }
+    if (Object.prototype.hasOwnProperty.call(unitMap, ch)) {
+      const unit = unitMap[ch]
+      if (current === 0) current = 1
+      result += current * unit
+      current = 0
+    }
+  }
+
+  const total = result + current
+  return Number.isFinite(total) && total > 0 ? total : null
+}
+
+const getBuildingPriority = (building) => {
+  const text = String(building || '').trim()
+  if (!text) return Number.MAX_SAFE_INTEGER
+
+  const arabicMatch = text.match(/(\d+)\s*(号楼|教)/)
+  if (arabicMatch) return Number(arabicMatch[1])
+
+  const chineseMatch = text.match(/([零一二两三四五六七八九十百千]+)\s*(号楼|教)/)
+  if (chineseMatch) {
+    const n = parseChineseNumber(chineseMatch[1])
+    if (n !== null) return n
+  }
+
+  return Number.MAX_SAFE_INTEGER
+}
+
+const getRoomSortNumber = (roomNum) => {
+  const match = String(roomNum || '').match(/\d+/)
+  return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER
+}
+
+const sortClassrooms = (rooms) => {
+  return [...rooms].sort((a, b) => {
+    const buildingDiff = getBuildingPriority(a.building) - getBuildingPriority(b.building)
+    if (buildingDiff !== 0) return buildingDiff
+
+    const buildingNameDiff = String(a.building || '').localeCompare(String(b.building || ''), 'zh-Hans-CN')
+    if (buildingNameDiff !== 0) return buildingNameDiff
+
+    const floorDiff = Number(a.floor || 0) - Number(b.floor || 0)
+    if (floorDiff !== 0) return floorDiff
+
+    return getRoomSortNumber(a.roomNum) - getRoomSortNumber(b.roomNum)
+  })
+}
+
 // 解析图片地址（逗号分隔）
 const parseImages = (input) => {
   return String(input || '')
@@ -181,7 +260,8 @@ const fetchClassrooms = async () => {
     const res = await request.get('/classrooms', {
       params: keyword.value ? { keyword: keyword.value } : {}
     })
-    classrooms.value = Array.isArray(res) ? res : []
+    const roomList = Array.isArray(res) ? res : []
+    classrooms.value = sortClassrooms(roomList)
   } catch (error) {
     ElMessage.error('获取教室列表失败')
   } finally {

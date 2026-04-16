@@ -388,17 +388,64 @@ const normalizeEquipment = (value) => {
   return []
 }
 
-// 默认排序：一教 -> 二教 -> 其他；同楼按楼层升序，再按教室号升序
+// 默认排序：按教学楼数字序（X教/X号楼）升序；同楼按楼层升序，再按教室号升序
+const parseChineseNumber = (text) => {
+  const token = String(text || '').trim()
+  if (!token) return null
+
+  const digitMap = {
+    '零': 0,
+    '一': 1,
+    '二': 2,
+    '两': 2,
+    '三': 3,
+    '四': 4,
+    '五': 5,
+    '六': 6,
+    '七': 7,
+    '八': 8,
+    '九': 9
+  }
+  const unitMap = {
+    '十': 10,
+    '百': 100,
+    '千': 1000
+  }
+
+  let result = 0
+  let current = 0
+
+  for (const ch of token) {
+    if (Object.prototype.hasOwnProperty.call(digitMap, ch)) {
+      current = digitMap[ch]
+      continue
+    }
+    if (Object.prototype.hasOwnProperty.call(unitMap, ch)) {
+      const unit = unitMap[ch]
+      if (current === 0) current = 1
+      result += current * unit
+      current = 0
+    }
+  }
+
+  const total = result + current
+  return Number.isFinite(total) && total > 0 ? total : null
+}
+
 const getBuildingPriority = (building) => {
   const text = String(building || '').trim()
-  if (!text) return 99
+  if (!text) return Number.MAX_SAFE_INTEGER
 
-  if (text.includes('一教') || text.includes('1号楼') || text.includes('1教')) return 1
-  if (text.includes('二教') || text.includes('2号楼') || text.includes('2教')) return 2
+  const arabicMatch = text.match(/(\d+)\s*(号楼|教)/)
+  if (arabicMatch) return Number(arabicMatch[1])
 
-  const match = text.match(/(\d+)/)
-  if (match) return Number(match[1]) || 99
-  return 99
+  const chineseMatch = text.match(/([零一二两三四五六七八九十百千]+)\s*(号楼|教)/)
+  if (chineseMatch) {
+    const n = parseChineseNumber(chineseMatch[1])
+    if (n !== null) return n
+  }
+
+  return Number.MAX_SAFE_INTEGER
 }
 
 const toFloorNumber = (floor) => {
@@ -411,19 +458,17 @@ const toRoomNumber = (roomNum) => {
   return match ? Number(match[1]) || 9999 : 9999
 }
 
-const buildCategories = (rooms) => {
-  const typeMap = new Map()
-  rooms.forEach(room => {
-    const typeName = room.typeName || '其他'
-    if (!typeMap.has(typeName)) {
-      typeMap.set(typeName, typeMap.size + 1)
-    }
-  })
+const mapClassroomCategoryId = (rooms) => {
+  const typeIdMap = new Map(
+    categories.value.map(item => [String(item.name || '').trim(), item.id])
+  )
 
-  categories.value = Array.from(typeMap.entries()).map(([name, id]) => ({ id, name }))
-  rooms.forEach(room => {
-    const typeName = room.typeName || '其他'
-    room.categoryId = typeMap.get(typeName)
+  return rooms.map(room => {
+    const typeName = String(room.typeName || '').trim()
+    return {
+      ...room,
+      categoryId: typeIdMap.get(typeName) ?? null
+    }
   })
 }
 
@@ -488,19 +533,28 @@ const fetchSlides = async () => {
  * 获取教室分类
  */
 const fetchCategories = async () => {
-  // TODO: 从后端获取分类数据
-  // const res = await request.get('/api/classroom-types')
-  // categories.value = res.data
+  try {
+    const res = await request.get('/classroom-types', {
+      params: {
+        page: 1,
+        pageSize: 1000
+      }
+    })
 
-  // 模拟数据
-  categories.value = [
-    { id: 1, name: '普通教室' },
-    { id: 2, name: '多媒体教室' },
-    { id: 3, name: '实验室' },
-    { id: 4, name: '会议室' },
-    { id: 5, name: '报告厅' },
-    { id: 6, name: '自习室' }
-  ]
+    const rows = Array.isArray(res?.data) ? res.data : []
+    categories.value = rows
+      .map(item => ({
+        id: item.id,
+        name: item.typeName
+      }))
+      .filter(item => item.id !== undefined && item.id !== null && item.name)
+
+    if (classrooms.value.length) {
+      classrooms.value = mapClassroomCategoryId(classrooms.value)
+    }
+  } catch (error) {
+    categories.value = []
+  }
 }
 
 /**
@@ -534,14 +588,16 @@ const fetchClassrooms = async () => {
       const buildingDiff = getBuildingPriority(a.building) - getBuildingPriority(b.building)
       if (buildingDiff !== 0) return buildingDiff
 
+      const buildingNameDiff = String(a.building || '').localeCompare(String(b.building || ''), 'zh-Hans-CN')
+      if (buildingNameDiff !== 0) return buildingNameDiff
+
       const floorDiff = toFloorNumber(a.floor) - toFloorNumber(b.floor)
       if (floorDiff !== 0) return floorDiff
 
       return toRoomNumber(a.roomNum) - toRoomNumber(b.roomNum)
     })
 
-    buildCategories(rooms)
-    classrooms.value = rooms
+    classrooms.value = mapClassroomCategoryId(rooms)
   } catch (error) {
     ElMessage.error('获取教室数据失败')
   }

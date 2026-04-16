@@ -112,6 +112,85 @@ const formatRoomName = (room) => {
   return `${building}${roomNum}` || '教室'
 }
 
+const parseChineseNumber = (text) => {
+  const token = String(text || '').trim()
+  if (!token) return null
+
+  const digitMap = {
+    '零': 0,
+    '一': 1,
+    '二': 2,
+    '两': 2,
+    '三': 3,
+    '四': 4,
+    '五': 5,
+    '六': 6,
+    '七': 7,
+    '八': 8,
+    '九': 9
+  }
+  const unitMap = {
+    '十': 10,
+    '百': 100,
+    '千': 1000
+  }
+
+  let result = 0
+  let current = 0
+
+  for (const ch of token) {
+    if (Object.prototype.hasOwnProperty.call(digitMap, ch)) {
+      current = digitMap[ch]
+      continue
+    }
+    if (Object.prototype.hasOwnProperty.call(unitMap, ch)) {
+      const unit = unitMap[ch]
+      if (current === 0) current = 1
+      result += current * unit
+      current = 0
+    }
+  }
+
+  const total = result + current
+  return Number.isFinite(total) && total > 0 ? total : null
+}
+
+const getBuildingPriority = (building) => {
+  const text = String(building || '').trim()
+  if (!text) return Number.MAX_SAFE_INTEGER
+
+  const arabicMatch = text.match(/(\d+)\s*(号楼|教)/)
+  if (arabicMatch) return Number(arabicMatch[1])
+
+  const chineseMatch = text.match(/([零一二两三四五六七八九十百千]+)\s*(号楼|教)/)
+  if (chineseMatch) {
+    const n = parseChineseNumber(chineseMatch[1])
+    if (n !== null) return n
+  }
+
+  return Number.MAX_SAFE_INTEGER
+}
+
+const getRoomSortNumber = (roomNum) => {
+  const match = String(roomNum || '').match(/\d+/)
+  return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER
+}
+
+const sortClassrooms = (rooms) => {
+  return [...rooms].sort((a, b) => {
+    const buildingDiff = getBuildingPriority(a.building) - getBuildingPriority(b.building)
+    if (buildingDiff !== 0) return buildingDiff
+
+    const buildingNameDiff = String(a.building || '').localeCompare(String(b.building || ''), 'zh-Hans-CN')
+    if (buildingNameDiff !== 0) return buildingNameDiff
+
+    const floorDiff = Number(a.floor || 0) - Number(b.floor || 0)
+    if (floorDiff !== 0) return floorDiff
+
+    return getRoomSortNumber(a.roomNum) - getRoomSortNumber(b.roomNum)
+  })
+}
+
 // 构建筛选项（类型/教学楼/楼层/院系/状态）
 const buildFilterOptions = (rooms) => {
   const typeSet = new Set()
@@ -164,7 +243,8 @@ const filteredClassrooms = computed(() => {
 const fetchClassrooms = async () => {
   try {
     const res = await request.get('/classrooms')
-    classrooms.value = Array.isArray(res) ? res : []
+    const roomList = Array.isArray(res) ? res : []
+    classrooms.value = sortClassrooms(roomList)
     buildFilterOptions(classrooms.value)
   } catch (error) {
     ElMessage.error('获取教室列表失败')
@@ -213,7 +293,7 @@ watch(() => route.query.keyword, (value) => {
   padding: 18px 20px;
   background: #ffffff;
   border-radius: 16px;
-  display: flex;  
+  display: flex;
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
@@ -256,7 +336,7 @@ watch(() => route.query.keyword, (value) => {
   height: 36px;
   /* 内边距 */
   padding: 0 16px;
-  margin:20px 0 0 20px;
+  margin: 20px 0 0 20px;
   border: none;
   background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
   color: #fff;
