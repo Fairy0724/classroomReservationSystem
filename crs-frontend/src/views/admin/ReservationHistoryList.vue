@@ -25,6 +25,7 @@
 
             <el-button type="primary" @click="handleSearch">查询</el-button>
             <el-button @click="handleReset">重置</el-button>
+            <el-button @click="exportCsv">导出CSV</el-button>
             <el-button @click="fetchList">刷新</el-button>
           </div>
         </div>
@@ -194,6 +195,46 @@ const handleReset = () => {
   query.endDate = ''
   page.value = 1
   fetchList()
+}
+
+const downloadCsv = (filename, headers, rows) => {
+  const escapeCell = (value) => {
+    const text = String(value ?? '')
+    if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+      return `"${text.replace(/"/g, '""')}"`
+    }
+    return text
+  }
+
+  const headerLine = headers.map(escapeCell).join(',')
+  const bodyLines = rows.map(row => row.map(escapeCell).join(','))
+  const csv = `\uFEFF${[headerLine, ...bodyLines].join('\n')}`
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `${filename}.csv`
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const exportCsv = () => {
+  const headers = ['classroomName', 'applicantName', 'approverName', 'activityName', 'activityType', 'reservationDate', 'timeRange', 'participantCount', 'status', 'submittedAt', 'approvedAt', 'rejectedAt']
+  const rows = tableData.value.map(item => [
+    item.classroomName,
+    item.applicantName,
+    item.approverName,
+    item.activityName,
+    item.activityType,
+    item.reservationDate,
+    item.timeRange,
+    item.participantCount,
+    item.status,
+    item.submittedAt,
+    item.approvedAt,
+    item.rejectedAt
+  ])
+  downloadCsv('历史预约', headers, rows)
 }
 
 // 首次进入页面时自动加载

@@ -90,11 +90,7 @@
         <div class="header-left">
           <!-- 面包屑导航 -->
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item
-              v-for="(item, index) in breadcrumbItems"
-              :key="`${item.path}-${index}`"
-              :to="item.to"
-            >
+            <el-breadcrumb-item v-for="(item, index) in breadcrumbItems" :key="`${item.path}-${index}`" :to="item.to">
               {{ item.label }}
             </el-breadcrumb-item>
           </el-breadcrumb>

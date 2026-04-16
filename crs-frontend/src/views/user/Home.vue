@@ -73,8 +73,8 @@
 
           <!-- ========== 【教师专属功能】========== -->
           <!-- 只有教师角色才能看到以下功能 -->
-          <div v-if="isTeacher" class="action-card teacher-card" @click="goToApproval">
-            <div class="action-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+          <div v-if="isTeacher" class="action-card" @click="goToApproval">
+            <div class="action-icon" style="background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);">
               <el-icon :size="32">
                 <Checked />
               </el-icon>
@@ -845,23 +845,6 @@ onMounted(async () => {
   transform: translateY(-5px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   border-color: var(--primary-color);
-}
-
-/* 教师专属卡片样式 */
-.action-card.teacher-card {
-  border: 2px dashed var(--warning-color);
-}
-
-.action-card.teacher-card::before {
-  content: '教师';
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 10px;
-  background: var(--warning-color);
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
 .action-icon {

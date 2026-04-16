@@ -7,6 +7,9 @@
           <div class="actions">
             <el-input v-model="keyword" placeholder="按名称/位置搜索" clearable class="search-input"
               @keyup.enter="fetchClassrooms" />
+            <el-button @click="downloadTemplate">下载模板</el-button>
+            <el-button @click="triggerImport">导入CSV</el-button>
+            <el-button @click="exportCsv">导出CSV</el-button>
             <el-button type="primary" @click="openCreateDialog">新增教室</el-button>
           </div>
         </div>
@@ -84,6 +87,8 @@
         <el-button type="primary" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
+
+    <input ref="fileInput" type="file" accept=".csv" class="hidden-file" @change="handleImportFile" />
   </div>
 </template>
 
@@ -100,6 +105,7 @@ const classrooms = ref([])
 const classroomTypeOptions = ref([])
 const loading = ref(false)
 const keyword = ref('')
+const fileInput = ref(null)
 
 const dialogVisible = ref(false)
 const form = ref({
@@ -327,7 +333,8 @@ const submitForm = async () => {
 
 const confirmDelete = async (row) => {
   try {
-    await ElMessageBox.confirm(`确认删除教室【${row.name}】吗？`, '提示', {
+    const displayName = `${row.building || ''}${row.roomNum || ''}` || `ID:${row.classroomId}`
+    await ElMessageBox.confirm(`确认删除教室【${displayName}】吗？`, '提示', {
       type: 'warning'
     })
     await request.delete(`/classrooms/${row.classroomId}`)
@@ -335,6 +342,214 @@ const confirmDelete = async (row) => {
     fetchClassrooms()
   } catch (error) {
     // 取消或失败均不处理
+  }
+}
+
+const downloadCsv = (filename, headers, rows) => {
+  const escapeCell = (value) => {
+    const text = String(value ?? '')
+    if (text.includes(',') || text.includes('"') || text.includes('\n')) {
+      return `"${text.replace(/"/g, '""')}"`
+    }
+    return text
+  }
+
+  const headerLine = headers.map(escapeCell).join(',')
+  const bodyLines = rows.map(row => row.map(escapeCell).join(','))
+  const csv = `\uFEFF${[headerLine, ...bodyLines].join('\n')}`
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `${filename}.csv`
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const exportCsv = () => {
+  const headers = ['building', 'floor', 'roomNum', 'deptName', 'capacity', 'equipment', 'typeId', 'status', 'mainImage', 'extraImages']
+  const rows = classrooms.value.map(item => [
+    item.building,
+    item.floor,
+    item.roomNum,
+    item.deptName,
+    item.capacity,
+    item.equipment,
+    item.typeId,
+    item.status,
+    item.mainImage,
+    Array.isArray(item.extraImages) ? item.extraImages.join('|') : ''
+  ])
+  downloadCsv('教室列表', headers, rows)
+}
+
+const downloadTemplate = () => {
+  const headers = ['building', 'floor', 'roomNum', 'deptName', 'capacity', 'equipment', 'typeId', 'status', 'mainImage', 'extraImages']
+  downloadCsv('教室导入模板', headers, [])
+}
+
+const triggerImport = () => {
+  if (!fileInput.value) return
+  fileInput.value.value = ''
+  fileInput.value.click()
+}
+
+const parseCsv = (text) => {
+  const rows = []
+  let row = []
+  let value = ''
+  let inQuotes = false
+
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i]
+    const next = text[i + 1]
+
+    if (inQuotes) {
+      if (char === '"' && next === '"') {
+        value += '"'
+        i += 1
+      } else if (char === '"') {
+        inQuotes = false
+      } else {
+        value += char
+      }
+      continue
+    }
+
+    if (char === '"') {
+      inQuotes = true
+      continue
+    }
+    if (char === ',') {
+      row.push(value)
+      value = ''
+      continue
+    }
+    if (char === '\n') {
+      row.push(value)
+      rows.push(row)
+      row = []
+      value = ''
+      continue
+    }
+    if (char === '\r') continue
+    value += char
+  }
+
+  if (value.length || row.length) {
+    row.push(value)
+    rows.push(row)
+  }
+  return rows
+}
+
+const normalizeHeaderKey = (key) => {
+  const trimmed = String(key || '').trim()
+  const map = {
+    楼号: 'building',
+    楼层: 'floor',
+    教室编号: 'roomNum',
+    所属学院: 'deptName',
+    容量: 'capacity',
+    设备: 'equipment',
+    教室类型ID: 'typeId',
+    教室类型: 'typeId',
+    状态: 'status',
+    主图URL: 'mainImage',
+    额外图片: 'extraImages'
+  }
+  return map[trimmed] || trimmed
+}
+
+const resolveTypeId = (rawValue) => {
+  const text = String(rawValue || '').trim()
+  if (!text) return null
+  const asNumber = Number(text)
+  if (Number.isInteger(asNumber) && asNumber > 0) return asNumber
+
+  const found = classroomTypeOptions.value.find(item => item.typeName === text)
+  return found?.id || null
+}
+
+const handleImportFile = async (event) => {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  try {
+    const text = await file.text()
+    const rows = parseCsv(text)
+    if (rows.length < 2) {
+      ElMessage.warning('CSV 内容为空')
+      return
+    }
+
+    const headers = rows[0].map(normalizeHeaderKey)
+    const items = rows.slice(1)
+      .filter(row => row.some(cell => String(cell || '').trim() !== ''))
+      .map(row => {
+        const item = {}
+        headers.forEach((key, index) => {
+          item[key] = row[index]
+        })
+        return item
+      })
+
+    if (!items.length) {
+      ElMessage.warning('没有可导入的数据')
+      return
+    }
+
+    let successCount = 0
+    const errors = []
+
+    for (let i = 0; i < items.length; i += 1) {
+      const row = items[i]
+      const typeId = resolveTypeId(row.typeId)
+      if (!typeId) {
+        errors.push(`第${i + 2}行：教室类型无效`)
+        continue
+      }
+
+      const payload = {
+        building: String(row.building || '').trim(),
+        floor: Number(row.floor || 1),
+        roomNum: String(row.roomNum || '').trim(),
+        deptName: String(row.deptName || '').trim(),
+        capacity: Number(row.capacity || 0),
+        equipment: String(row.equipment || '').trim(),
+        type: typeId,
+        status: String(row.status || '可用').trim() || '可用',
+        mainImage: String(row.mainImage || '').trim(),
+        extraImages: String(row.extraImages || '').split('|').map(item => item.trim()).filter(Boolean)
+      }
+
+      if (!payload.building || !payload.roomNum || !payload.deptName || !payload.capacity) {
+        errors.push(`第${i + 2}行：必填字段不完整`)
+        continue
+      }
+
+      try {
+        await request.post('/classrooms', payload)
+        successCount += 1
+      } catch (error) {
+        const msg = error?.response?.data?.msg || '导入失败'
+        errors.push(`第${i + 2}行：${msg}`)
+      }
+    }
+
+    if (successCount) {
+      ElMessage.success(`导入成功：${successCount} 条`)
+      fetchClassrooms()
+    }
+
+    if (errors.length) {
+      ElMessageBox.alert(errors.slice(0, 10).join('<br/>'), `导入失败 ${errors.length} 条`, {
+        dangerouslyUseHTMLString: true,
+        confirmButtonText: '知道了'
+      })
+    }
+  } catch (error) {
+    ElMessage.error('导入失败')
   }
 }
 
@@ -368,6 +583,7 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .search-input {
@@ -409,5 +625,9 @@ onMounted(() => {
 
 .delete-btn:hover {
   background: rgba(255, 77, 79, 0.2);
+}
+
+.hidden-file {
+  display: none;
 }
 </style>
