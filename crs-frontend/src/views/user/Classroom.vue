@@ -51,21 +51,27 @@
 
     <!-- ==================== 教室卡片列表 ==================== -->
     <div class="list">
-      <div v-for="room in filteredClassrooms" :key="room.classroomId" class="card"
-        @click="goToDetail(room.classroomId)">
-        <img :src="room.mainImage || logoUrl" :alt="formatRoomName(room)" />
-        <div class="info">
-          <h3>{{ formatRoomName(room) }}</h3>
-          <p>{{ room.type }} · {{ room.equipment || '设备待完善' }}</p>
-          <div class="meta">
-            <span>地点：{{ room.building }}-{{ room.floor }}层</span>
-            <span>容量：{{ room.capacity }}人</span>
-          </div>
-          <div class="meta">
-            <span>学院：{{ room.deptName }}</span>
-            <span>状态：{{ room.status }}</span>
+      <template v-if="filteredClassrooms.length">
+        <div v-for="room in filteredClassrooms" :key="room.classroomId" class="card"
+          @click="goToDetail(room.classroomId)">
+          <img :src="room.mainImage || logoUrl" :alt="formatRoomName(room)" />
+          <div class="info">
+            <h3>{{ formatRoomName(room) }}</h3>
+            <p>{{ room.type }} · {{ room.equipment || '设备待完善' }}</p>
+            <div class="meta">
+              <span>地点：{{ room.building }}-{{ room.floor }}层</span>
+              <span>容量：{{ room.capacity }}人</span>
+            </div>
+            <div class="meta">
+              <span>学院：{{ room.deptName }}</span>
+              <span>状态：{{ room.status }}</span>
+            </div>
           </div>
         </div>
+      </template>
+
+      <div v-else-if="dataLoaded" class="empty-state">
+        <el-empty :description="emptyStateText" />
       </div>
     </div>
   </div>
@@ -99,6 +105,8 @@ const filters = ref({
 
 // ==================== 教室数据与筛选项 ====================
 const classrooms = ref([])
+// 标记列表是否已完成首次加载，避免请求中提前显示空结果
+const dataLoaded = ref(false)
 const typeOptions = ref([])
 const buildingOptions = ref([])
 const floorOptions = ref([])
@@ -239,6 +247,25 @@ const filteredClassrooms = computed(() => {
   })
 })
 
+// 只要有任一筛选条件生效，就认为是“筛选后无结果”场景
+const hasActiveFilter = computed(() => {
+  return Boolean(
+    keyword.value.trim() ||
+    filters.value.type ||
+    filters.value.building ||
+    filters.value.floor ||
+    filters.value.department ||
+    filters.value.status
+  )
+})
+
+const emptyStateText = computed(() => {
+  if (hasActiveFilter.value) {
+    return '没有匹配的教室，请调整筛选条件后重试'
+  }
+  return '暂无教室数据'
+})
+
 // ==================== 数据获取 ====================
 const fetchClassrooms = async () => {
   try {
@@ -248,6 +275,8 @@ const fetchClassrooms = async () => {
     buildFilterOptions(classrooms.value)
   } catch (error) {
     ElMessage.error('获取教室列表失败')
+  } finally {
+    dataLoaded.value = true
   }
 }
 
@@ -357,6 +386,14 @@ watch(() => route.query.keyword, (value) => {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 36px 20px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
 }
 
 .card {
