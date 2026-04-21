@@ -111,7 +111,7 @@ const approve = async () => {
 
 const reject = async () => {
   try {
-    const { value } = await ElMessageBox.prompt('请输入驳回理由（可选）', '驳回预约', {
+    const { value } = await ElMessageBox.prompt('请输入驳回理由', '驳回预约', {
       confirmButtonText: '确定',
       cancelButtonText: '取消'
     })

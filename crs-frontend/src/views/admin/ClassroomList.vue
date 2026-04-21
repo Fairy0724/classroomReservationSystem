@@ -8,8 +8,8 @@
             <el-input v-model="keyword" placeholder="按名称/位置搜索" clearable class="search-input"
               @keyup.enter="fetchClassrooms" />
             <el-button @click="downloadTemplate">下载模板</el-button>
-            <el-button @click="triggerImport">导入CSV</el-button>
-            <el-button @click="exportCsv">导出CSV</el-button>
+            <el-button @click="triggerImport">导入</el-button>
+            <el-button @click="exportCsv">导出</el-button>
             <el-button type="primary" @click="openCreateDialog">新增教室</el-button>
           </div>
         </div>

@@ -37,7 +37,7 @@
             </div>
             <div class="row">
               <span class="label">有效期</span>
-              <span class="value">{{ item.expireTime || '长期有效' }}</span>
+              <span class="value">{{ formatTime(item.expireTime) || '长期有效' }}</span>
             </div>
           </div>
           <div class="card-actions">

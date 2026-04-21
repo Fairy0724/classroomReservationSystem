@@ -135,7 +135,6 @@ const buildDashboardData = async () => {
      FROM reservation r
      LEFT JOIN classroom c ON r.classroom_id = c.classroom_id
      LEFT JOIN classroom_type ct ON c.type = ct.type_id
-     WHERE r.status IN ('待审批','已通过')
      GROUP BY COALESCE(ct.type_name, '未分类')
      ORDER BY value DESC`
   );
@@ -165,7 +164,6 @@ const buildDashboardData = async () => {
     `SELECT r.classroom_id, c.building, c.room_num, COUNT(*) AS value
      FROM reservation r
      LEFT JOIN classroom c ON r.classroom_id = c.classroom_id
-     WHERE r.status IN ('待审批','已通过')
      GROUP BY r.classroom_id, c.building, c.room_num
      ORDER BY value DESC
      LIMIT 5`

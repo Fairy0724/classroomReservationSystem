@@ -20,7 +20,11 @@
           <el-table-column prop="courseName" label="课程名称" min-width="160" />
           <el-table-column prop="teacherName" label="授课教师" min-width="120" />
           <el-table-column prop="className" label="班级" min-width="140" />
-          <el-table-column prop="classroomId" label="教室ID" width="90" />
+          <el-table-column label="教室名称" min-width="120">
+            <template #default="scope">
+              {{ getClassroomName(scope.row.classroomId) }}
+            </template>
+          </el-table-column>
           <el-table-column prop="periodId" label="节次" width="80" />
           <el-table-column prop="weekday" label="星期" width="90">
             <template #default="scope">
@@ -95,6 +99,7 @@ import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const schedules = ref([])
+const classroomNameMap = ref({})
 const loading = ref(false)
 const keyword = ref('')
 
@@ -131,6 +136,11 @@ const weekdayLabel = (value) => {
   return found ? found.label : `周${value || '-'}`
 }
 
+const getClassroomName = (classroomId) => {
+  const text = classroomNameMap.value[String(classroomId)]
+  return text || `教室ID:${classroomId || '-'}`
+}
+
 // 初始化表单
 const resetForm = () => {
   form.value = {
@@ -159,6 +169,22 @@ const fetchSchedules = async () => {
     ElMessage.error('获取课程列表失败')
   } finally {
     loading.value = false
+  }
+}
+
+const fetchClassroomNameMap = async () => {
+  try {
+    const res = await request.get('/classrooms')
+    const list = Array.isArray(res) ? res : []
+    const map = {}
+    list.forEach(item => {
+      const id = item?.classroomId
+      if (!id) return
+      map[String(id)] = `${item?.building || ''}${item?.roomNum || ''}` || `教室${id}`
+    })
+    classroomNameMap.value = map
+  } catch (error) {
+    classroomNameMap.value = {}
   }
 }
 
@@ -417,6 +443,7 @@ const handleImportFile = async (event) => {
 }
 
 onMounted(() => {
+  fetchClassroomNameMap()
   fetchSchedules()
 })
 </script>

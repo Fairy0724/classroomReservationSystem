@@ -288,12 +288,12 @@ const statusOption = computed(() => {
     ? normalizedRecords.value
     : normalizedRecords.value.filter(item => item.room === statusRoom.value)
 
-  // 统计四种状态（若不存在则为 0）
+  // 统计状态（若不存在则为 0）
   const counts = {
     '待审批': 0,
     '已通过': 0,
     '已取消': 0,
-    '已完成': 0
+    '已驳回': 0
   }
   target.forEach(item => {
     if (counts[item.status] !== undefined) counts[item.status] += 1
@@ -323,7 +323,7 @@ const statusOption = computed(() => {
           { value: counts['待审批'], name: '待审批' },
           { value: counts['已通过'], name: '已通过' },
           { value: counts['已取消'], name: '已取消' },
-          { value: counts['已完成'], name: '已完成' }
+          { value: counts['已驳回'], name: '已驳回' }
         ]
       }
     ]
@@ -361,6 +361,9 @@ const trendOption = computed(() => {
     if (counts[key] !== undefined) counts[key] += 1
   })
 
+  const trendValues = xSeries.map(key => counts[key])
+  const trendMax = Math.max(0, ...trendValues)
+
   return {
     tooltip: { trigger: 'axis' },
     grid: { left: 30, right: 20, top: 20, bottom: 30, containLabel: true },
@@ -368,11 +371,17 @@ const trendOption = computed(() => {
       type: 'category',
       data: xSeries.map(key => (isMonthlySeries ? key : dayjs(key).format('MM-DD')))
     },
-    yAxis: { type: 'value' },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      minInterval: 1,
+      max: trendMax === 0 ? 1 : Math.ceil(trendMax * 1.2),
+      axisLabel: { formatter: '{value}' }
+    },
     series: [
       {
         type: 'line',
-        data: xSeries.map(key => counts[key]),
+        data: trendValues,
         smooth: true,
         areaStyle: { color: 'rgba(46, 204, 113, 0.2)' },
         lineStyle: { color: '#2ecc71' }
@@ -403,9 +412,12 @@ const slotOption = computed(() => {
   const labels = list.map(i => i.key)
   const values = list.map(i => (slotMetric.value === 'count' ? i.count : Number((i.duration / 60).toFixed(1))))
 
-  // 平均：按区间天数除以（本月平均/半年平均）
+  // 预约次数使用总量（整数）；预约时长使用区间平均（小时）
   const daysInRange = Math.max(1, range.end.diff(range.start, 'day') + 1)
-  const normalizedValues = values.map(v => Number((v / daysInRange).toFixed(1)))
+  const normalizedValues = slotMetric.value === 'count'
+    ? values.map(v => Math.round(v))
+    : values.map(v => Number((v / daysInRange).toFixed(1)))
+  const slotMax = Math.max(0, ...normalizedValues)
 
   return {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
@@ -416,7 +428,19 @@ const slotOption = computed(() => {
     },
     yAxis: {
       type: 'value',
-      name: slotMetric.value === 'count' ? '次数' : '小时'
+      name: slotMetric.value === 'count' ? '次数' : '小时',
+      min: 0,
+      minInterval: slotMetric.value === 'count' ? 1 : 0,
+      max: slotMetric.value === 'count'
+        ? (slotMax === 0 ? 1 : Math.ceil(slotMax * 1.2))
+        : (slotMax === 0 ? 1 : Number((slotMax * 1.2).toFixed(2))),
+      axisLabel: {
+        formatter: (value) => {
+          if (value === 0) return '0'
+          if (slotMetric.value === 'count') return `${Math.round(value)}`
+          return Number.isInteger(value) ? `${value}` : Number(value).toFixed(2)
+        }
+      }
     },
     series: [
       {

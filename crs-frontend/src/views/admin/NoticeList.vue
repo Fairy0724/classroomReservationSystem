@@ -35,7 +35,7 @@
           </el-table-column>
           <el-table-column prop="expireTime" label="过期时间" min-width="170">
             <template #default="scope">
-              {{ scope.row.expireTime || '长期有效' }}
+              {{ formatTime(scope.row.expireTime) || '长期有效' }}
             </template>
           </el-table-column>
           <el-table-column label="置顶" width="100">

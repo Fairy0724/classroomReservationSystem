@@ -17,7 +17,7 @@
           <div class="meta">
             <span>发布时间：{{ formatTime(detail.publishTime) }}</span>
             <span>浏览量：{{ detail.viewCount }}</span>
-            <span>有效期：{{ detail.expireTime || '长期有效' }}</span>
+            <span>有效期：{{ formatTime(detail.expireTime) || '长期有效' }}</span>
           </div>
         </div>
         <div class="panel-body">

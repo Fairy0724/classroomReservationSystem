@@ -833,7 +833,6 @@ onMounted(async () => {
 .action-card {
   position: relative;
   background: #fff;
-  border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   padding: 24px 20px;
   text-align: center;

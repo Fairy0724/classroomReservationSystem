@@ -6,6 +6,8 @@ const {
   refreshReportAdminId
 } = require('../services/statisticalReportService');
 
+const DASHBOARD_CACHE_TTL_MS = 5 * 60 * 1000;
+
 // 管理员首页仪表盘数据
 // 处理策略：
 // 1) 先读 statistical_report（更快）
@@ -15,7 +17,7 @@ const getDashboardData = async (req, res) => {
     // 生成当天报表键，保证读到当天快照
     const reportKey = getDashboardReportKey();
     const [rows] = await pool.query(
-      `SELECT data FROM statistical_report
+      `SELECT data, generated_at FROM statistical_report
        WHERE report_type = ? AND period = ? AND dimension = ?
          AND start_date = ? AND end_date = ?
        ORDER BY generated_at DESC
@@ -31,12 +33,17 @@ const getDashboardData = async (req, res) => {
 
     if (rows.length && rows[0].data) {
       try {
-        // 报表 JSON 的结构与前端图表所需一致
-        const parsed = JSON.parse(rows[0].data);
-        // 命中缓存时也刷新 admin_id（仅记录操作人，不重算统计）
-        await refreshReportAdminId(reportKey, req.user?.user_id ?? null);
-        res.json({ data: parsed });
-        return;
+        const generatedAt = rows[0].generated_at ? new Date(rows[0].generated_at).getTime() : 0;
+        const isFresh = generatedAt > 0 && (Date.now() - generatedAt <= DASHBOARD_CACHE_TTL_MS);
+
+        if (isFresh) {
+          // 报表 JSON 的结构与前端图表所需一致
+          const parsed = JSON.parse(rows[0].data);
+          // 命中缓存时也刷新 admin_id（仅记录操作人，不重算统计）
+          await refreshReportAdminId(reportKey, req.user?.user_id ?? null);
+          res.json({ data: parsed });
+          return;
+        }
       } catch (err) {
         // 解析失败则回退为实时统计
         console.warn('dashboard report parse failed:', err.message);

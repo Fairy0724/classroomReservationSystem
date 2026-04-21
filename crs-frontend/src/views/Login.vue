@@ -28,7 +28,7 @@
                   <i class="fa fa-book"></i> 查看教室
                 </button>
                 <button class="btn btn-secondary">
-                  <i class="fa fa-calendar"></i> 预约指南
+                  <i class="fa fa-calendar"></i> 高效预约
                 </button>
               </div>
             </div>
