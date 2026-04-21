@@ -1,4 +1,5 @@
 // 审批结果通知服务：统一审批通知模板与落库逻辑
+const { notifyUser } = require('../ws/wsHub');
 
 const formatDate = (value) => {
   if (!value) return '--';
@@ -99,11 +100,24 @@ const sendApprovalNotification = async ({
     content = `预约详情：${reservationDateText} ${startText}-${endText}，活动：${activityNameText}-${activityTypeText}，参与人数：${participantText}人${reasonText}。\n如有疑问请联系审批教师：${teacherName}（${teacherPhone}）。`;
   }
 
-  await query(
+  // 先写消息表，确保离线用户也能在消息中心看到记录
+  const [insertRes] = await query(
     `INSERT INTO message (user_id, type, title, content, send_time, is_read)
      VALUES (?, ?, ?, ?, NOW(), 0)`,
     [context.applicant_id, 'approval', title, content]
   );
+
+  // 再实时推送：在线端收到事件后刷新列表/角标
+  // 这样可同时满足“可靠落库”和“即时提醒”
+  notifyUser(context.applicant_id, {
+    event: 'message:new',
+    data: {
+      messageId: insertRes?.insertId || null,
+      type: 'approval',
+      title,
+      sendTime: new Date().toISOString()
+    }
+  });
 };
 
 module.exports = {

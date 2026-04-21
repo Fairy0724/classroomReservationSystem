@@ -23,6 +23,7 @@ const removeConnection = (userId, ws) => {
 };
 
 // 初始化 WebSocket 服务，挂载到 HTTP Server 上
+// 约定：客户端连接地址为 /ws?token=<jwt>
 const initWebSocket = (server) => {
   const wss = new WebSocket.Server({ server, path: '/ws' });
 
@@ -37,7 +38,7 @@ const initWebSocket = (server) => {
         ws.close(4001, 'Unauthorized');
         return;
       }
-      // 验证 token，获取 user_id
+      // 验证 token，获取 user_id；该 user_id 将作为连接池 key
       const payload = jwt.verify(token, jwtSecret);
       userId = payload.user_id;
       if (!userId) {
@@ -58,6 +59,7 @@ const initWebSocket = (server) => {
 
     ws.on('message', (message) => {
       // 简单心跳：客户端发送 ping，服务端回 pong
+      // 目的：保持连接活性，辅助前端判断断线重连
       if (String(message) === 'ping') {
         ws.send('pong');
       }
@@ -68,6 +70,11 @@ const initWebSocket = (server) => {
 };
 
 // 推送消息给指定用户（若用户多端在线则广播）
+// payload 协议示例：
+// {
+//   event: 'message:new',
+//   data: { messageId, type, title, sendTime }
+// }
 const notifyUser = (userId, payload) => {
   const key = String(userId);
   const set = connections.get(key);

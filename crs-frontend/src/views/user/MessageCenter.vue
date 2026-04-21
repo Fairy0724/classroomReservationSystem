@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
@@ -82,6 +82,11 @@ const isAllSelected = computed(() => {
 
 const page = ref(1)
 const limit = ref(50)
+// WebSocket 运行时状态
+let ws = null
+let wsHeartbeatTimer = null
+let wsReconnectTimer = null
+let wsStopped = false
 
 // 刷新消息列表
 const fetchMessages = async () => {
@@ -106,6 +111,78 @@ const fetchMessages = async () => {
       .sort((a, b) => new Date(b.sendTime).getTime() - new Date(a.sendTime).getTime())
   } catch {
     ElMessage.error('消息同步失败，请重新登录后尝试')
+  }
+}
+// 停止 WebSocket 心跳定时器
+const stopWsHeartbeat = () => {
+  if (wsHeartbeatTimer) {
+    window.clearInterval(wsHeartbeatTimer)
+    wsHeartbeatTimer = null
+  }
+}
+
+const buildWsUrl = () => {
+  // token 放在查询参数中，服务端在握手阶段进行 JWT 校验
+  const token = localStorage.getItem('token') || ''
+  if (!token) return ''
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL
+  if (apiBase && /^https?:\/\//i.test(apiBase)) {
+    const baseUrl = new URL(apiBase)
+    const protocol = baseUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${baseUrl.host}/ws?token=${encodeURIComponent(token)}`
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`
+}
+
+const connectWs = () => {
+  // 防止重复连接；组件销毁后不再重连
+  if (wsStopped || ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) return
+
+  const url = buildWsUrl()
+  if (!url) return
+
+  ws = new WebSocket(url)
+
+  ws.onopen = () => {
+    // 心跳：每 30 秒发送 ping，服务端返回 pong
+    stopWsHeartbeat()
+    wsHeartbeatTimer = window.setInterval(() => {
+      if (ws?.readyState === WebSocket.OPEN) ws.send('ping')
+    }, 30000)
+  }
+
+  ws.onmessage = async (event) => {
+    const text = String(event?.data || '')
+    if (text === 'pong') return
+
+    try {
+      const payload = JSON.parse(text)
+      // 约定事件：message:new，表示后端已写入新消息
+      if (payload?.event === 'message:new') {
+        await fetchMessages()
+      }
+    } catch {
+      // 非 JSON 消息忽略
+    }
+  }
+
+  ws.onclose = () => {
+    stopWsHeartbeat()
+    ws = null
+
+    if (wsStopped) return
+    // 固定间隔重连，避免网络抖动导致实时能力失效
+    if (wsReconnectTimer) window.clearTimeout(wsReconnectTimer)
+    wsReconnectTimer = window.setTimeout(() => {
+      connectWs()
+    }, 3000)
+  }
+
+  ws.onerror = () => {
+    // 交由 onclose 统一重连
   }
 }
 
@@ -213,7 +290,24 @@ watch([filterStatus, filterType], () => {
 })
 
 onMounted(() => {
+  wsStopped = false
   fetchMessages()
+  connectWs()
+})
+
+onUnmounted(() => {
+  wsStopped = true
+  stopWsHeartbeat()
+
+  if (wsReconnectTimer) {
+    window.clearTimeout(wsReconnectTimer)
+    wsReconnectTimer = null
+  }
+
+  if (ws) {
+    ws.close()
+    ws = null
+  }
 })
 </script>
 

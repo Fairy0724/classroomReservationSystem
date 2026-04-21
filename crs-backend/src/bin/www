@@ -3,6 +3,7 @@
 const db = require('../db/db');
 const { startActivityReminderJob } = require('../jobs/activityReminder');
 const { startStatisticalReportJob } = require('../jobs/statisticalReport');
+const { initWebSocket } = require('../ws/wsHub');
 // 调用
 db(
   // 连接成功回调
@@ -28,6 +29,10 @@ db(
      */
 
     var server = http.createServer(app);
+
+    // 挂载 WebSocket 服务（路径：/ws）
+    // 注意：必须使用同一个 HTTP server 挂载，前端才能通过同域名实时通信
+    initWebSocket(server);
 
     /**
      * Listen on provided port, on all network interfaces.

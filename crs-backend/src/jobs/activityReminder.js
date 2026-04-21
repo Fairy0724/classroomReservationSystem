@@ -1,5 +1,6 @@
 // 定期扫描预约并发提醒
 const db = require('../db/db');
+const { notifyUser } = require('../ws/wsHub');
 const {
   activityReminderLeadMinutes,
   activityReminderIntervalMs
@@ -62,11 +63,23 @@ const runReminderJob = async () => {
 
       if (exists.length) continue;
 
-      await db.pool.query(
+      const [insertRes] = await db.pool.query(
         `INSERT INTO message (user_id, type, title, content, send_time, is_read)
          VALUES (?, 'activity_reminder', ?, ?, NOW(), 0)`,
         [item.applicant_id, title, content]
       );
+      // 先落库再推送：
+      // 1) message 表保证消息可追溯
+      // 2) WebSocket 让在线用户即时看到提醒
+      notifyUser(item.applicant_id, {
+        event: 'message:new',
+        data: {
+          messageId: insertRes?.insertId || null,
+          type: 'activity_reminder',
+          title,
+          sendTime: new Date().toISOString()
+        }
+      });
     }
   } catch (err) {
     console.warn('activity reminder job failed:', err.message);

@@ -146,6 +146,11 @@ const userStore = useUserStore()
 const unreadCount = ref(0)
 const pendingApprovalCount = ref(0)
 let unreadTimer = null
+// WebSocket 运行时状态
+let ws = null
+let wsHeartbeatTimer = null
+let wsReconnectTimer = null
+let wsStopped = false
 
 const isLoggedIn = computed(() => !!userStore.token && !!userStore.userInfo)
 
@@ -159,6 +164,8 @@ const searchValue = computed(() => {
 })
 
 onMounted(async () => {
+  wsStopped = false
+
   if (userStore.token && !userStore.userInfo) {
     try {
       await userStore.fetchProfile()
@@ -170,15 +177,104 @@ onMounted(async () => {
   if (isLoggedIn.value) {
     await fetchNavBadges()
     unreadTimer = window.setInterval(fetchNavBadges, 30000)
+    connectWs()
   }
 })
 
 onUnmounted(() => {
+  wsStopped = true
+
   if (unreadTimer) {
     window.clearInterval(unreadTimer)
     unreadTimer = null
   }
+
+  stopWsHeartbeat()
+
+  if (wsReconnectTimer) {
+    window.clearTimeout(wsReconnectTimer)
+    wsReconnectTimer = null
+  }
+
+  if (ws) {
+    ws.close()
+    ws = null
+  }
 })
+
+const stopWsHeartbeat = () => {
+  if (wsHeartbeatTimer) {
+    window.clearInterval(wsHeartbeatTimer)
+    wsHeartbeatTimer = null
+  }
+}
+
+// 生成 WebSocket 连接地址：
+// - 若配置了绝对 API 地址，按该地址的主机名拼接 ws/wss
+// - 否则走同源地址（便于本地代理和生产同域部署）
+const buildWsUrl = () => {
+  const token = userStore.token || localStorage.getItem('token') || ''
+  if (!token) return ''
+
+  const apiBase = import.meta.env.VITE_API_BASE_URL
+  if (apiBase && /^https?:\/\//i.test(apiBase)) {
+    const baseUrl = new URL(apiBase)
+    const protocol = baseUrl.protocol === 'https:' ? 'wss:' : 'ws:'
+    return `${protocol}//${baseUrl.host}/ws?token=${encodeURIComponent(token)}`
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}/ws?token=${encodeURIComponent(token)}`
+}
+
+const connectWs = () => {
+  // 避免重复连接，且组件卸载后不再重连
+  if (wsStopped || ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) return
+
+  const url = buildWsUrl()
+  if (!url) return
+
+  ws = new WebSocket(url)
+
+  ws.onopen = () => {
+    // 心跳：每 30 秒发送 ping，服务端回 pong
+    stopWsHeartbeat()
+    wsHeartbeatTimer = window.setInterval(() => {
+      if (ws?.readyState === WebSocket.OPEN) ws.send('ping')
+    }, 30000)
+  }
+
+  ws.onmessage = async (event) => {
+    const text = String(event?.data || '')
+    if (text === 'pong') return
+
+    try {
+      const payload = JSON.parse(text)
+      // 约定事件：message:new，表示有新消息入库
+      if (payload?.event === 'message:new') {
+        await fetchNavBadges()
+      }
+    } catch {
+      // 非 JSON 消息忽略
+    }
+  }
+
+  ws.onclose = () => {
+    stopWsHeartbeat()
+    ws = null
+
+    if (wsStopped) return
+    // 固定间隔重连（3 秒）
+    if (wsReconnectTimer) window.clearTimeout(wsReconnectTimer)
+    wsReconnectTimer = window.setTimeout(() => {
+      connectWs()
+    }, 3000)
+  }
+
+  ws.onerror = () => {
+    // 交由 onclose 统一重连
+  }
+}
 
 const fetchUnreadCount = async () => {
   try {
